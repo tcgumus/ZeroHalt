@@ -35,7 +35,7 @@ AWS_REGION: str = os.getenv("AWS_REGION", "us-west-2")
 BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "eu.amazon.nova-lite-v1:0")
 # AMS_MODEL varsa model ID olarak onu kullan (öncelikli).
 _ams_model = os.getenv("AMS_MODEL")
-if _ams_model:
+if _ams_model and _ams_model.strip():
     BEDROCK_MODEL_ID = _ams_model
 # AWS_KEY ortamda varsa boto3'ün göreceği şekilde dışa aktar.
 AWS_KEY: str = os.getenv("AWS_KEY", "")

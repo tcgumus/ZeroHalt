@@ -339,35 +339,14 @@ def _chat_offline(question: str) -> str:
 
 
 def _chat_online(question: str) -> str:
-    """Bedrock-mantle OpenAI-uyumlu endpoint ile sohbet."""
-    import requests
+    """boto3 Bedrock Runtime converse API ile sohbet."""
+    from src.bedrock_client import BedrockClient
 
-    base_url = f"https://bedrock-mantle.{config.AWS_REGION}.api.aws/v1"
-    url = f"{base_url}/chat/completions"
+    client = BedrockClient()
+    messages = [{"role": "user", "content": [{"text": question}]}]
+    system = [{"text": prompts.SYSTEM_PROMPT}]
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {config.AWS_KEY}",
-    }
-
-    payload = {
-        "model": config.BEDROCK_MODEL_ID,
-        "messages": [
-            {"role": "system", "content": prompts.SYSTEM_PROMPT},
-            {"role": "user", "content": question},
-        ],
-        "max_tokens": 2048,
-        "temperature": 0.2,
-    }
-
-    resp = requests.post(url, json=payload, headers=headers, timeout=30)
-    if resp.status_code != 200:
-        body_text = resp.text[:1500]
-        return (
-            f"⚠️ Bedrock API hatası ({resp.status_code}):\n{body_text}\n\n"
-            f"💡 SCP izni açılmalı: bedrock-mantle:CreateInference"
-        )
-    data = resp.json()
-
-    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    return answer.strip() or "Yanıt üretilemedi."
+    resp = client.converse(messages, system=system)
+    out_msg = resp.get("output", {}).get("message", {})
+    blocks = [b["text"] for b in out_msg.get("content", []) if "text" in b]
+    return "\n".join(blocks).strip() or "Yanıt üretilemedi."
