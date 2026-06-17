@@ -205,10 +205,31 @@ async function loadWorkOrders() {
   const wos = await api('/api/work_orders');
   const box = $('#woBody');
   if (!wos.length) { box.innerHTML = '<p class="muted-note">Henüz iş emri yok.</p>'; return; }
-  box.innerHTML = wos.map(w => `<div class="alt ok" style="background:#fff;border-color:var(--line)">
-      <div class="h"><span class="c">${w.work_order_id}</span><span class="nm">${w.part_code} · Teknisyen: ${w.technician}</span>
-        <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span></div>
-      <div class="note">${(w.steps || []).length} adım · Olay: ${w.fault_id} · ${w.created_at}</div></div>`).join('');
+  box.innerHTML = '';
+  wos.forEach(w => {
+    const steps = w.steps || [];
+    const card = el('div', 'wo-card');
+    card.innerHTML = `
+      <div class="wo-head">
+        <span class="c">${w.work_order_id}</span>
+        <span class="nm">${w.part_code} · Teknisyen: ${w.technician}</span>
+        <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span>
+        <span class="wo-caret">▾</span>
+      </div>
+      <div class="wo-sub">${steps.length} adım · Olay: ${w.fault_id} · ${w.created_at}</div>
+      <div class="wo-detail">
+        <div class="wo-row"><div class="lbl">Kök Neden</div><div class="val">${w.root_cause || '—'}</div></div>
+        <div class="wo-row"><div class="lbl">Onarım Adımları</div>
+          <ul class="steps">${steps.map(s => `<li><span class="mk">•</span><span>${s}</span></li>`).join('') || '<li>—</li>'}</ul></div>
+        <div class="wo-metarow">
+          <span>Olay: <b>${w.fault_id}</b></span><span>Parça: <b>${w.part_code}</b></span>
+          <span>Teknisyen: <b>${w.technician}</b></span><span>Durum: <b>${w.status}</b></span>
+          <span>Oluşturma: <b>${w.created_at}</b></span>
+        </div>
+      </div>`;
+    card.querySelector('.wo-head').onclick = () => card.classList.toggle('open');
+    box.append(card);
+  });
 }
 
 // ---------- Grafik / stok ----------

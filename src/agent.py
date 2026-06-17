@@ -267,11 +267,17 @@ def _jsonable(obj: Any) -> Any:
 # ---------------------------------------------------------------------------
 def chat(question: str) -> str:
     """Serbest sohbet — canlı veriyle yanıtlar (offline: kural tabanlı)."""
-    if not config.OFFLINE_MODE:
+    if config.CHAT_ONLINE or not config.OFFLINE_MODE:
         try:
             return _chat_online(question)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Bağlantı hatasını kullanıcıya göster (debug).
+            import traceback
+            err_detail = traceback.format_exc()
+            return (
+                f"⚠️ Bedrock bağlantı hatası: {exc}\n\n"
+                f"Detay:\n```\n{err_detail}\n```"
+            )
     return _chat_offline(question)
 
 
@@ -333,26 +339,35 @@ def _chat_offline(question: str) -> str:
 
 
 def _chat_online(question: str) -> str:
-    from src.bedrock_client import BedrockClient
+    """Bedrock-mantle OpenAI-uyumlu endpoint ile sohbet."""
+    import requests
 
-    client = BedrockClient()
-    messages = [{"role": "user", "content": [{"text": question}]}]
-    system = [{"text": prompts.SYSTEM_PROMPT}]
-    tool_config = {"tools": toolkit.TOOL_SPECS}
-    for _ in range(8):
-        resp = client.converse(messages, system=system, tool_config=tool_config)
-        out_msg = resp.get("output", {}).get("message", {})
-        messages.append(out_msg)
-        if resp.get("stopReason") != "tool_use":
-            return "\n".join(b["text"] for b in out_msg.get("content", []) if "text" in b)
-        results = []
-        for b in out_msg.get("content", []):
-            if "toolUse" not in b:
-                continue
-            tu = b["toolUse"]
-            res = toolkit.dispatch(tu["name"], tu.get("input", {}))
-            results.append(
-                {"toolResult": {"toolUseId": tu["toolUseId"], "content": [{"json": _jsonable(res)}]}}
-            )
-        messages.append({"role": "user", "content": results})
-    return "Yanıt üretilemedi."
+    base_url = f"https://bedrock-mantle.{config.AWS_REGION}.api.aws/v1"
+    url = f"{base_url}/chat/completions"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {config.AWS_KEY}",
+    }
+
+    payload = {
+        "model": config.BEDROCK_MODEL_ID,
+        "messages": [
+            {"role": "system", "content": prompts.SYSTEM_PROMPT},
+            {"role": "user", "content": question},
+        ],
+        "max_tokens": 2048,
+        "temperature": 0.2,
+    }
+
+    resp = requests.post(url, json=payload, headers=headers, timeout=30)
+    if resp.status_code != 200:
+        body_text = resp.text[:1500]
+        return (
+            f"⚠️ Bedrock API hatası ({resp.status_code}):\n{body_text}\n\n"
+            f"💡 SCP izni açılmalı: bedrock-mantle:CreateInference"
+        )
+    data = resp.json()
+
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+    return answer.strip() or "Yanıt üretilemedi."

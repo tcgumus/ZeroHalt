@@ -31,8 +31,14 @@ def _path(name: str, default: str) -> Path:
 
 
 # --- AWS / Bedrock ---------------------------------------------------------
-AWS_REGION: str = os.getenv("AWS_REGION", "eu-central-1")
+AWS_REGION: str = os.getenv("AWS_REGION", "us-west-2")
 BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "eu.amazon.nova-lite-v1:0")
+# AMS_MODEL varsa model ID olarak onu kullan (öncelikli).
+_ams_model = os.getenv("AMS_MODEL")
+if _ams_model:
+    BEDROCK_MODEL_ID = _ams_model
+# AWS_KEY ortamda varsa boto3'ün göreceği şekilde dışa aktar.
+AWS_KEY: str = os.getenv("AWS_KEY", "")
 
 # --- Knowledge Base (RAG) --------------------------------------------------
 KNOWLEDGE_BASE_ID: str = os.getenv("KNOWLEDGE_BASE_ID", "LYKPLY3GMD")
@@ -42,6 +48,9 @@ USE_REAL_KB: bool = _bool("USE_REAL_KB", False)
 # --- Çalışma modu ----------------------------------------------------------
 # Offline mod: Bedrock'a hiç bağlanmadan deterministik akış (demo/CI).
 OFFLINE_MODE: bool = _bool("OFFLINE_MODE", True)
+
+# Chat-only online: Teşhis offline kalırken asistan sohbeti Bedrock'a gider.
+CHAT_ONLINE: bool = _bool("CHAT_ONLINE", False)
 
 # --- Policy / onay ---------------------------------------------------------
 ORDER_APPROVAL_THRESHOLD: float = float(os.getenv("ORDER_APPROVAL_THRESHOLD", "5000"))

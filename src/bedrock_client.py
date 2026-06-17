@@ -56,6 +56,8 @@ class BedrockClient:
 
         self.region = region or config.AWS_REGION
         self.model_id = model_id or config.BEDROCK_MODEL_ID
+
+        # IAM role / ortam credential'ları otomatik kullanılır.
         self._runtime = boto3.client("bedrock-runtime", region_name=self.region)
 
     # --- Tool-use converse -------------------------------------------------
