@@ -577,7 +577,50 @@ function parseMd(text) {
   return html;
 }
 
-function addMsg(role, text) { const m = el('div', 'msg ' + role, role === 'ai' ? parseMd(text) : text.replace(/</g, '&lt;')); $('#msgs').append(m); $('#msgs').scrollTop = $('#msgs').scrollHeight; }
+let msgCounter = 0;
+function addMsg(role, text) {
+  const m = el('div', 'msg ' + role, role === 'ai' ? parseMd(text) : text.replace(/</g, '&lt;'));
+  if (role === 'ai' && text !== 'Merhaba, bakım asistanınızım. Parça, sipariş, iş emri ve stok durumunu sorabilirsiniz.') {
+    msgCounter++;
+    const mid = 'msg-' + msgCounter;
+    const fb = el('div', 'msg-feedback');
+    fb.innerHTML = `<button class="fb-btn up" data-mid="${mid}" title="Beğen">👍</button><button class="fb-btn down" data-mid="${mid}" title="Beğenme">👎</button>`;
+    fb.querySelector('.up').onclick = function() {
+      this.classList.add('active');
+      fb.querySelector('.down').classList.remove('active');
+      const existing = fb.querySelector('.fb-form');
+      if (existing) existing.remove();
+      saveFeedback(mid, text, 'positive', '');
+    };
+    fb.querySelector('.down').onclick = function() {
+      this.classList.add('active');
+      fb.querySelector('.up').classList.remove('active');
+      const existing = fb.querySelector('.fb-form');
+      if (existing) { existing.remove(); return; }
+      const form = el('div', 'fb-form');
+      form.innerHTML = `<input class="fb-input" placeholder="Ne yanlış gitti?" /><button class="btn fb-send">Gönder</button>`;
+      form.querySelector('.fb-send').onclick = () => {
+        const comment = form.querySelector('.fb-input').value.trim();
+        saveFeedback(mid, text, 'negative', comment);
+        form.innerHTML = '<span class="muted-note">Geri bildirim kaydedildi.</span>';
+      };
+      fb.append(form);
+    };
+    m.append(fb);
+  }
+  $('#msgs').append(m);
+  $('#msgs').scrollTop = $('#msgs').scrollHeight;
+}
+
+async function saveFeedback(mid, answer, rating, comment) {
+  try {
+    await api('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_id: mid, answer, rating, comment, timestamp: new Date().toISOString() })
+    });
+  } catch(e) { /* silent */ }
+}
 async function ask(q) {
   addMsg('user', q); $('#chatInp').value = '';
   const r = await api('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });

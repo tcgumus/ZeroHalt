@@ -311,6 +311,17 @@ def chat():
     return jsonify({"answer": agent.chat(q)})
 
 
+@app.post("/api/feedback")
+def feedback():
+    """Kullanıcı geri bildirimi kaydeder (beğen/beğenme + yorum)."""
+    body = request.get_json(force=True) or {}
+    import json as _json
+    feedback_file = BASE.parent / "data" / "feedback.jsonl"
+    with open(feedback_file, "a", encoding="utf-8") as f:
+        f.write(_json.dumps(body, ensure_ascii=False) + "\n")
+    return jsonify({"ok": True})
+
+
 def main() -> None:
     # DB hazır mı garanti et.
     datasource.list_incidents()

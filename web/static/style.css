@@ -279,6 +279,15 @@ section{display:flex;flex-direction:column;gap:14px}
 .msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--ink);
   border-radius:12px 12px 12px 3px}
 .msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-radius:12px 12px 3px 12px}
+.msg-feedback{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.fb-btn{background:none;border:1px solid var(--line);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;opacity:0.5;transition:all .15s}
+.fb-btn:hover{opacity:1;background:#f0f4fa}
+.fb-btn.active{opacity:1;border-color:var(--accent);background:#edf2fb}
+.fb-btn.active.up{border-color:var(--ok);background:var(--okbg)}
+.fb-btn.active.down{border-color:var(--crit);background:var(--critbg)}
+.fb-form{display:flex;gap:6px;width:100%;margin-top:6px}
+.fb-input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit}
+.fb-send{font-size:11px;padding:6px 12px}
 .quick{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
 .quick button{font-size:11px;border:1px solid var(--line);background:#F7F9FD;border-radius:999px;
   padding:6px 10px;cursor:pointer;color:var(--navy)}
