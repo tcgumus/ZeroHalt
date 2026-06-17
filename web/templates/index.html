@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeroHalt · Otonom Bakım ve Parça Yönetim Sistemi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <header>
+    <img src="/static/fnss_logo.png" alt="FNSS">
+    <div class="hsep"></div>
+    <div class="htitle">
+      <b>ZeroHalt — Otonom Bakım ve Parça Yönetim Sistemi</b>
+      <span>Yapay Zekâ Destekli Bakım Ajanı · Gölbaşı Üretim Tesisi</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="brandlogos">
+      <img src="/static/deloitte.svg" alt="Deloitte" class="brand-deloitte">
+      <img src="/static/aws.svg" alt="AWS" class="brand-aws">
+    </div>
+    <div class="user">
+      <div class="avatar">ED</div>
+      <div><span class="n">Elif Demirtaş</span><br><span class="r">Bakım Planlama Müdürü</span></div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav>
+    <div class="nav-h">ANA MENÜ</div>
+    <div class="nav-item active" data-target="sec-genel"><span class="d"></span>Genel Bakış</div>
+    <div class="nav-item" data-target="sec-ariza"><span class="d"></span>Arıza Akışı<span class="badge" id="navAriza">0</span></div>
+    <div class="nav-item" data-target="sec-ariza"><span class="d"></span>Teşhis Paneli</div>
+    <div class="nav-item" data-target="sec-parca"><span class="d"></span>Parça Tanıma</div>
+    <div class="nav-item" data-target="sec-siparis"><span class="d"></span>Muadil &amp; Sipariş<span class="badge" id="navSip">0</span></div>
+    <div class="nav-item" data-target="sec-isemri"><span class="d"></span>İş Emirleri</div>
+    <div class="nav-item" data-target="sec-onleyici"><span class="d"></span>Önleyici Bakım<span class="badge" id="navOnleyici">0</span></div>
+    <div class="nav-item" data-target="sec-stok"><span class="d"></span>Stok &amp; Duruş</div>
+    <div class="nav-item" id="navChat"><span class="d"></span>Asistan</div>
+    <div class="spacer"></div>
+    <div class="nav-status">
+      <div class="t"><span class="d"></span>Ajan Durumu: Aktif</div>
+      <p id="navStatus">Son tesis taraması: 2 dk önce<br>İzlenen makine: 47</p>
+    </div>
+    <div class="nav-ver">ZeroHalt v2.4.1 · FNSS Savunma Sistemleri</div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+    <div class="wrap">
+
+      <!-- GENEL BAKIŞ -->
+      <section id="sec-genel">
+        <div class="sec-head"><h1>Genel Bakış</h1><span class="sub" id="dateLbl">11 Haziran 2026 · Vardiya 2</span></div>
+        <div class="grid4" id="kpis"></div>
+      </section>
+
+      <!-- ARIZA + TEŞHİS -->
+      <section id="sec-ariza">
+        <div class="sec-head"><h1>Arıza Akışı &amp; Teşhis</h1><span class="sub">Bir arıza seçip ajanı çalıştırın</span></div>
+        <div class="two">
+          <div class="card">
+            <h3>Aktif Arıza Kuyruğu</h3>
+            <div class="inc" id="incList"></div>
+          </div>
+          <div class="card diag" id="diagCard">
+            <h3>Teşhis Paneli <span id="diagSpin"></span></h3>
+            <div id="diagBody"><p class="muted-note">Soldan bir arıza seçip <b>Ajanı Çalıştır</b>'a basın. Ajan kök nedeni bulur, parça/stok kontrolü yapar, muadil önerir, sipariş taslağı ve iş emri hazırlar.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARÇA TANIMA -->
+      <section id="sec-parca">
+        <div class="sec-head"><h1>Parça Tanıma</h1><span class="sub">Fotoğraf yükleyin — aynı multimodal model tanımlar</span></div>
+        <div class="card">
+          <div class="drop" id="drop">📷 Parça fotoğrafı yüklemek için tıklayın<br><span class="muted-note">(veya parça kodunu ipucu olarak yazın)</span>
+            <input type="file" id="file" accept="image/*" class="hidden">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <input id="hintInp" placeholder="İpucu / etiket metni (örn. HYD-4520-B veya 'hidrolik pompa')" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px">
+            <button class="btn primary" id="identBtn">Tanı</button>
+          </div>
+          <div class="muted-note" style="margin-top:14px">Örnek parçalar (demo için tıklayın):</div>
+          <div id="partGallery" class="gallery"></div>
+          <div class="ident" id="identOut"></div>
+        </div>
+      </section>
+
+      <!-- MUADİL & SİPARİŞ -->
+      <section id="sec-siparis">
+        <div class="sec-head"><h1>Muadil &amp; Sipariş</h1><span class="sub">Sipariş onayı her zaman insana bırakılır</span></div>
+        <div class="two">
+          <div class="card"><h3>Muadil Parçalar</h3><div id="altBody"><p class="muted-note">Teşhis çalıştırıldığında muadiller burada listelenir.</p></div></div>
+          <div class="card"><h3>Sipariş Taslağı (Onay Bekliyor)</h3><div id="orderBody"><p class="muted-note">Teşhis sonrası sipariş taslağı burada görünür.</p></div></div>
+        </div>
+      </section>
+
+      <!-- İŞ EMİRLERİ -->
+      <section id="sec-isemri">
+        <div class="sec-head"><h1>İş Emirleri</h1><span class="sub">Teşhis sonrası oluşturulan onarım emirleri</span></div>
+        <div class="card"><div id="woBody"><p class="muted-note">Henüz iş emri yok.</p></div></div>
+      </section>
+
+      <!-- ÖNLEYİCİ BAKIM (UC-06) -->
+      <section id="sec-onleyici">
+        <div class="sec-head"><h1>Önleyici Bakım &amp; Uyarılar</h1><span class="sub">Geçmiş kayıtlardan öğrenen proaktif analiz</span></div>
+        <div class="card" style="margin-bottom:14px"><h3>Proaktif Uyarılar <span id="alertCount" class="apill" style="background:var(--critbg);color:var(--crit)"></span></h3><div id="alertBody"><p class="muted-note">Analiz yükleniyor…</p></div></div>
+        <div class="two">
+          <div class="card"><h3>Tekrar Eden Arızalar</h3><div id="recurBody"><p class="muted-note">—</p></div></div>
+          <div class="card"><h3>Çapraz-Varyant Parça Riski</h3><div id="shortageBody"><p class="muted-note">—</p></div></div>
+        </div>
+      </section>
+
+      <!-- STOK & DURUŞ -->
+      <section id="sec-stok">
+        <div class="sec-head"><h1>Stok &amp; Duruş</h1><span class="sub">Haftalık duruş ve kritik stok</span></div>
+        <div class="two" style="grid-template-columns:1fr 1fr">
+          <div class="card"><h3>Haftalık Duruş (saat)</h3><div class="bars" id="bars"></div></div>
+          <div class="card"><h3>Emniyet Stoğu Altındaki Parçalar</h3><div class="lowstock" id="low"></div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- CHAT -->
+<button class="fab" id="fab">💬</button>
+<div class="chat" id="chat">
+  <div class="ch"><div class="avatar" style="width:30px;height:30px;font-size:11px">AI</div><b>Bakım Asistanı</b><button class="x" id="chatX">×</button></div>
+  <div class="msgs" id="msgs"></div>
+  <div class="quick" id="quick"></div>
+  <div class="inp"><input id="chatInp" placeholder="Soru yazın…"><button id="chatSend">Gönder</button></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

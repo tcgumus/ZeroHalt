@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 120" role="img" aria-label="Amazon Web Services">
+  <text x="18" y="74" font-family="Arial, Helvetica, sans-serif" font-weight="700"
+        font-size="84" fill="#252F3E" textLength="150" lengthAdjust="spacingAndGlyphs"
+        letter-spacing="-2">aws</text>
+  <!-- smile -->
+  <path d="M22 92 C70 116 120 116 168 92" stroke="#FF9900" stroke-width="11"
+        fill="none" stroke-linecap="round"/>
+  <!-- arrowhead -->
+  <path d="M150 84 L176 90 L156 106 Z" fill="#FF9900"/>
+</svg>

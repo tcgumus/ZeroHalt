@@ -1,0 +1,88 @@
+{
+  "E-2208": {
+    "part_code": "HYD-4520-B",
+    "confidence": 92,
+    "recommended_qty": 12,
+    "technician": "Murat Kaya",
+    "evidence": [
+      "Sistem basıncı 280 bar hedefe karşın 226 bar ölçüldü (sürekli düşüş eğilimi).",
+      "Pompa karter sıcaklığı 12°C yükseldi — iç kaçak kaynaklı ısınma imzası.",
+      "Yağ analizinde bronz partikül konsantrasyonu arttı (piston pabucu aşınması)."
+    ],
+    "steps": [
+      "Makineyi güvenli duruşa al, enerjiyi kilitle-etiketle (LOTO).",
+      "Hidrolik devre basıncını tahliye et, yağ seviyesini kaydet.",
+      "HYD-4520-B pompayı sök; bağlantı flanşlarını muayene et.",
+      "Yeni / muadil pompayı monte et, tork değerlerini kılavuza göre uygula.",
+      "Basınç testi (280 bar) ve 30 dk deneme çalışması yap, sonucu kaydet."
+    ]
+  },
+  "F-7412": {
+    "part_code": "SRV-KR360-A3",
+    "confidence": 87,
+    "recommended_qty": 1,
+    "technician": "Ahmet Yıldız",
+    "evidence": [
+      "Tork sapması son 12 çevrimde %14 artış gösterdi (eşik: %8).",
+      "Motor akım spektrumunda dişli geçiş frekansında yan bantlar tespit edildi.",
+      "Aynı redüktörde 2024-Q3 döneminde benzer arıza kaydı mevcut (WO-2024-0712)."
+    ],
+    "steps": [
+      "Robotu güvenli pozisyona al, enerjiyi kilitle-etiketle (LOTO).",
+      "Eksen 3 redüktör ünitesini (SRV-KR360-A3) sök.",
+      "Yeni redüktörü monte et, tork kalibrasyonu uygula.",
+      "Yüksek hız profilinde test çevrimi yap, tork sapmasını doğrula (< %8)."
+    ]
+  },
+  "M-1190": {
+    "part_code": "RLM-6310-ZZ",
+    "confidence": 84,
+    "recommended_qty": 16,
+    "technician": "Selin Acar",
+    "evidence": [
+      "BPFO frekansında genlik 3 haftada 2,1 katına çıktı.",
+      "Sıcaklık trendi normal — hasar erken evrede.",
+      "Yağlama periyodu uyumlu; kök neden yorulma olarak değerlendirildi."
+    ],
+    "steps": [
+      "Presi güvenli duruşa al, enerjiyi kilitle-etiketle (LOTO).",
+      "Ana mil ön rulman bölgesine eriş, eski rulmanı sök.",
+      "RLM-6310-ZZ rulmanı monte et, ön yük ve yağlamayı ayarla.",
+      "Titreşim ölçümü ile BPFO genliğini doğrula, sonucu kaydet."
+    ]
+  },
+  "P-0834": {
+    "part_code": "NZL-5500-12",
+    "confidence": 95,
+    "recommended_qty": 0,
+    "technician": "Boya Bakım Ekibi",
+    "evidence": [
+      "Atomizasyon basıncı nozül çıkışında %32 düşük ölçüldü.",
+      "Viskozite ölçümü parti değişimi sonrası 4 sn sapma gösterdi.",
+      "Nozül değişimi sonrası test püskürtmesi başarılı."
+    ],
+    "steps": [
+      "Robotu güvenli moda al, boya beslemesini kapat.",
+      "Tıkalı NZL-5500-12 nozülü sök, kurumuş boyayı temizle/değiştir.",
+      "Yeni nozülü tak, viskozite ve atomizasyon basıncını kontrol et.",
+      "Test püskürtmesi yap, sonucu kaydet ve arızayı kapat."
+    ]
+  },
+  "K-3321": {
+    "part_code": "KYS-890-T",
+    "confidence": 90,
+    "recommended_qty": 6,
+    "technician": "Konveyör Bakım Ekibi",
+    "evidence": [
+      "Hat hızı sapması %6 ölçüldü (kayma göstergesi).",
+      "Gergi ayarı sonrası sapma %0,4 seviyesine indi.",
+      "Kayış çalışma saati: 11.400 / öngörülen ömür 12.000."
+    ],
+    "steps": [
+      "Konveyörü güvenli duruşa al, enerjiyi kilitle-etiketle (LOTO).",
+      "Tahrik kayışı KYS-890-T gerginliğini ve aşınmasını muayene et.",
+      "Kayışı değiştir, gergi mekanizmasını yeniden ayarla.",
+      "Hat hızı sapmasını ölç (< %1) ve sonucu kaydet."
+    ]
+  }
+}

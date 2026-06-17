@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Ortam / sırlar
+.env
+
+# Veritabanı (CSV'lerden yeniden üretilir: python seed_db.py)
+data/*.db
+
+# Çıkarım/geçici dosyalar
+_*.js
+_*.json
+_*.html
+_*.png

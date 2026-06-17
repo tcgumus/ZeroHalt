@@ -1,0 +1,11 @@
+incident_id,machine_id,fault_code,title,reported_at,status,resolved_at,downtime_hours
+INC-7412,KAYNAK-ROBOT-02,F-7412,Servo motor tork sapması — Eksen 3,2026-06-11 09:42,yeni,,2.3
+INC-2208,CNC-T04 Torna,E-2208,Hidrolik güç ünitesi basınç düşüşü,2026-06-11 08:15,isleniyor,,3.6
+INC-1190,PRES-HP2,M-1190,Ana mil rulman titreşim eşiği aşıldı,2026-06-11 07:58,isleniyor,,3.8
+INC-0834,BOYA-ROBOT-BR1,P-0834,Püskürtme nozülü tıkanıklığı,2026-06-10 16:20,cozuldu,2026-06-10 19:50,3.5
+INC-3321,MONTAJ-HAT1 Konveyör,K-3321,Tahrik kayışı kayması,2026-06-10 14:05,cozuldu,2026-06-10 16:35,2.5
+INC-2207,CNC-T06 Torna,E-2208,Hidrolik filtre tıkanıklığı basınç dalgalanması,2026-06-09 11:00,cozuldu,2026-06-09 15:30,4.5
+INC-3320,MONTAJ-HAT2 Konveyör,K-3321,Tahrik kayışı gerginlik kaybı,2026-06-08 13:20,cozuldu,2026-06-08 14:50,1.5
+INC-1189,PRES-HP2,M-1190,Ana mil rulman erken yorulma,2026-06-07 09:10,cozuldu,2026-06-07 18:40,9.5
+INC-0833,BOYA-ROBOT-BR2,P-0834,Püskürtme nozülü atomizasyon düşüşü,2026-06-06 15:00,cozuldu,2026-06-06 16:00,1.0
+INC-7411,KAYNAK-ROBOT-05,F-7412,Redüktör dişli aşınması yüksek hız,2026-06-05 10:30,cozuldu,2026-06-05 16:00,5.5

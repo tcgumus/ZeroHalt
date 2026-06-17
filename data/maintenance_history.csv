@@ -1,0 +1,9 @@
+record_id,machine_id,date,fault_code,root_cause,part_used,resolution
+WO-2024-0712,KAYNAK-ROBOT-02,2024-08-14,F-7412,Eksen 3 redüktör dişli aşınması,SRV-KR360-A3,Redüktör ünitesi değiştirildi; tork kalibrasyonu yapıldı.
+WO-2025-0203,CNC-T04,2025-02-09,E-2208,Hidrolik pompa iç kaçak (piston aşınması),HYD-4520-B,Pompa değiştirildi; basınç testi 280 bar başarılı.
+WO-2025-0298,PRES-HP2,2025-03-22,M-1190,Ana mil rulman yorulması,RLM-6310-ZZ,Rulman planlı değişimle yenilendi.
+WO-2025-0455,BOYA-ROBOT-BR1,2025-05-30,P-0834,Nozül kurumuş boya tıkanıklığı,NZL-5500-12,Nozül değiştirildi; viskozite tedarikçi partisi kontrol edildi.
+WO-2025-0511,MONTAJ-HAT1,2025-06-18,K-3321,Tahrik kayışı gerginlik kaybı,KYS-890-T,Kayış değiştirildi; gergi mekanizması ayarlandı.
+WO-2025-0640,CNC-T06,2025-09-02,E-2208,Hidrolik filtre tıkanıklığı kaynaklı basınç dalgalanması,FLT-2210,Filtre değiştirildi; yağ analizi temiz.
+WO-2025-0788,PRES-HP2,2025-11-15,M-1190,Rulman erken yorulma (yağlama eksikliği),RLM-6310-ZZ,Rulman değişimi; otomatik yağlama hattı revize edildi.
+WO-2026-0102,KAYNAK-ROBOT-05,2026-01-20,F-7412,Redüktör dişli aşınması (yüksek hız profili),SRV-KR360-A3,Redüktör değiştirildi; hız profili sınırlandı.

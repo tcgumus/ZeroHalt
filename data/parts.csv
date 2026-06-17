@@ -1,0 +1,11 @@
+part_code,name,category,specs,on_hand,safety_stock,unit_cost,lead_time_days,used_in_variants
+HYD-4520-B,Eksenel Pistonlu Hidrolik Pompa,Hidrolik,"45 cc/dev; 280 bar; SAE flanş; CW yön",3,10,18500,21,CNC-T04;CNC-T06;PRES-HP2
+SRV-KR360-A3,Redüktör Ünitesi (Eksen 3),Tahrik,"i=120; çıkış torku 360 Nm; harmonik dişli",1,4,42000,35,KAYNAK-ROBOT-02;KAYNAK-ROBOT-05
+RLM-6310-ZZ,Rulman 6310-ZZ,Yatak,"50x110x27 mm; çift metal kapak; C3 boşluk",6,20,420,7,PRES-HP2;MONTAJ-HAT1;CNC-T04
+KYS-890-T,Tahrik Kayışı,Tahrik,"890 mm; HTD 8M profil; genişlik 30 mm",2,8,360,14,MONTAJ-HAT1;MONTAJ-HAT2
+FLT-2210,Hidrolik Yağ Filtresi,Hidrolik,"10 mikron; beta 200; 1 inç giriş",4,15,290,5,CNC-T04;CNC-T06;PRES-HP2;BOYA-ROBOT-BR1
+NZL-5500-12,Püskürtme Nozülü,Boya,"1.2 mm orifis; HVLP; paslanmaz",9,6,540,10,BOYA-ROBOT-BR1;BOYA-ROBOT-BR2
+HYD-4520-BR,Rexroth A10VSO-45 Hidrolik Pompa,Hidrolik,"45 cc/dev; 315 bar; SAE flanş; CW yön",8,6,19800,18,CNC-T04;CNC-T06;PRES-HP2
+HYD-4519-B,Parker PV046 Hidrolik Pompa,Hidrolik,"46 cc/dev; 300 bar; ISO flanş (adaptör gerekir)",14,6,17200,20,CNC-T04
+HYD-4380-C,Eaton 420 Serisi Hidrolik Pompa,Hidrolik,"44 cc/dev; 250 bar; SAE flanş",5,4,12900,16,PRES-HP2
+RLM-6310-C3,Rulman 6310 C3 (muadil marka),Yatak,"50x110x27 mm; açık tip; C3 boşluk",24,10,360,5,PRES-HP2;CNC-T04
