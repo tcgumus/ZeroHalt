@@ -106,11 +106,42 @@ section{display:flex;flex-direction:column;gap:14px}
 .btn.danger{background:#fff;border:1px solid #E7B6B6;color:var(--crit)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
+/* card subtitle (başlık altı açıklama) */
+.card-sub{font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.5}
+
 /* diagnosis */
-.diag .row{margin-bottom:14px}
-.diag .lbl{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
-.diag .val{font-size:13px;color:var(--ink);margin-top:4px;line-height:1.55}
-.conf{display:inline-flex;align-items:center;gap:8px;margin-top:4px}
+.diag .val{font-size:13px;color:var(--ink);line-height:1.55}
+
+/* teşhis: boş durum */
+.diag-empty{text-align:center;padding:26px 18px;border:1px dashed var(--line);border-radius:12px;background:#FAFBFD}
+.diag-empty-ic{font-size:30px;opacity:.7}
+.diag-empty-t{font-size:14px;font-weight:700;color:var(--navy);margin:8px 0 6px}
+
+/* teşhis: seçilen arıza */
+.diag-sel{border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px;padding:14px 16px;background:#F7F9FD}
+.diag-sel-h{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+
+/* teşhis: ajanın yürüttüğü adımlar */
+.diag-intro{font-size:12px;color:var(--ink);background:#F4F6FA;border:1px solid var(--line);
+  border-radius:9px;padding:10px 12px;line-height:1.55;margin-bottom:14px}
+.dstep{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;
+  margin-bottom:12px;overflow:hidden;background:#fff}
+.dhead{display:flex;align-items:center;gap:11px;padding:11px 14px;background:#F7F9FD;border-bottom:1px solid var(--line)}
+.dnum{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.dttl{display:flex;flex-direction:column;gap:2px;font-size:14px;font-weight:700;color:var(--navy)}
+.dttl .dsub{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0}
+.dbody{padding:13px 15px}
+
+/* stok satırı */
+.stockline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  border-radius:8px;padding:8px 11px;margin-top:8px}
+.stockline span{font-weight:500}
+.stockline.low{background:var(--critbg);color:var(--crit)}
+.stockline.okk{background:var(--okbg);color:var(--ok)}
+
+.conf{display:inline-flex;align-items:center;gap:8px;margin-top:10px}
+.conftxt{font-size:12px;font-weight:700}
 .confbar{width:160px;height:8px;background:#EAEEF5;border-radius:6px;overflow:hidden}
 .confbar i{display:block;height:100%;border-radius:6px}
 .evidence{list-style:none;display:flex;flex-direction:column;gap:6px}
@@ -218,7 +249,10 @@ section{display:flex;flex-direction:column;gap:14px}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #C7D0DE;
   border-top-color:var(--red);border-radius:50%;animation:rot .7s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
-.trace{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
-  background:#F4F6FA;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;
-  line-height:1.7;white-space:pre-wrap}
+.trace{display:flex;flex-direction:column;gap:6px}
+.trace-step{display:flex;align-items:center;gap:9px}
+.trace-step .ti{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:#E2E7F0;
+  color:#54627C;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.trace-step code{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--navy);
+  background:#F4F6FA;border:1px solid var(--line);border-radius:6px;padding:4px 9px;flex:1}
 .hidden{display:none}

@@ -57,8 +57,12 @@ function selectIncident(inc) {
   selectedIncident = inc;
   renderIncidents();
   $('#diagBody').innerHTML =
-    `<p class="val"><b>${inc.machine_id}</b> · ${inc.fault_code}<br>${inc.title}</p>
-     <button class="btn primary" id="runBtn" style="margin-top:12px">▶ Ajanı Çalıştır</button>`;
+    `<div class="diag-sel">
+       <div class="diag-sel-h">Seçilen arıza</div>
+       <div class="val"><b>${inc.machine_id}</b> · ${inc.fault_code}<br>${inc.title}</div>
+       <div class="muted-note" style="margin-top:8px">Ajan; kök neden → parça/stok → muadil → sipariş taslağı → iş emri zincirini çalıştıracak.</div>
+       <button class="btn primary" id="runBtn" style="margin-top:14px">▶ Ajanı Çalıştır</button>
+     </div>`;
   $('#runBtn').onclick = () => runDiagnosis(inc);
 }
 
@@ -81,19 +85,65 @@ async function runDiagnosis(inc) {
 function renderDiagnosis(r) {
   const conf = r.confidence;
   const cc = conf >= 90 ? 'var(--ok)' : conf >= 80 ? 'var(--warn)' : 'var(--crit)';
+  const confLbl = conf >= 90 ? 'Yüksek güven' : conf >= 80 ? 'Orta güven' : 'Düşük güven';
   const ev = (r.evidence || []).map(e => `<li>${e}</li>`).join('');
-  const src = (r.sources || []).map(s => `<div class="src">📖 ${s}</div>`).join('');
-  const traceTxt = (r.trace || []).map((t, i) => `${i + 1}. ${t.tool}(${Object.keys(t.input).join(', ')})`).join('\n');
+  const src = (r.sources || []).map(s => `<div class="src">📖 Kaynak: ${s}</div>`).join('');
+  const trace = (r.trace || []).map((t, i) =>
+    `<div class="trace-step"><span class="ti">${i + 1}</span><code>${t.tool}(${Object.keys(t.input).join(', ')})</code></div>`).join('');
+  const below = r.stock.below_safety;
+  const woId = r.work_order ? r.work_order.work_order_id : '';
+  const steps = (r.work_order ? r.work_order.steps : []);
+
+  // Her adım: numara + başlık + ne yaptığını anlatan kısa açıklama + içerik
   $('#diagBody').innerHTML = `
-    <div class="row"><div class="lbl">Kök Neden</div><div class="val">${r.root_cause}</div>
-      <div class="conf"><div class="confbar"><i style="width:${conf}%;background:${cc}"></i></div>
-      <span style="font-size:12px;font-weight:700;color:${cc}">Güven %${conf}</span></div></div>
-    <div class="row"><div class="lbl">Kanıtlar (sensör/analiz)</div><ul class="evidence">${ev}</ul>${src}</div>
-    <div class="row"><div class="lbl">İlgili Parça</div><div class="val"><b>${r.part.part_code}</b> · ${r.part.name}<br>
-      <span class="muted-note">Stok: ${r.stock.on_hand}/${r.stock.safety_stock} ${r.stock.below_safety ? '⚠️ emniyet stoğu altında' : '✓ yeterli'}</span></div></div>
-    <div class="row"><div class="lbl">Onarım Adımları (İş Emri ${r.work_order ? r.work_order.work_order_id : ''})</div>
-      <ul class="steps">${(r.work_order ? r.work_order.steps : []).map(s => `<li><span class="mk">${'•'}</span><span>${s}</span></li>`).join('')}</ul></div>
-    <div class="row"><div class="lbl">Ajan araç zinciri (tool-use)</div><div class="trace">${traceTxt}</div></div>`;
+    <div class="diag-intro">Ajan, seçilen arıza için aşağıdaki adımları <b>otonom</b> olarak yürüttü.
+      Kritik karar (sipariş onayı) size bırakılır — ajan kendisi tamamlamaz.</div>
+
+    <div class="dstep">
+      <div class="dhead"><span class="dnum">1</span>
+        <div class="dttl">Kök Neden<span class="dsub">Arızanın temel sebebi — geçmiş kayıt ve kılavuzlardan çıkarıldı</span></div></div>
+      <div class="dbody">
+        <div class="val">${r.root_cause}</div>
+        <div class="conf"><div class="confbar"><i style="width:${conf}%;background:${cc}"></i></div>
+          <span class="conftxt" style="color:${cc}">${confLbl} · %${conf}</span></div>
+      </div>
+    </div>
+
+    <div class="dstep">
+      <div class="dhead"><span class="dnum">2</span>
+        <div class="dttl">Kanıtlar<span class="dsub">Bu sonuca dayanak oluşturan sensör verileri ve kaynaklar</span></div></div>
+      <div class="dbody">
+        <ul class="evidence">${ev}</ul>${src}
+      </div>
+    </div>
+
+    <div class="dstep">
+      <div class="dhead"><span class="dnum">3</span>
+        <div class="dttl">İlgili Parça &amp; Stok<span class="dsub">Değişmesi gereken parça ve anlık stok durumu</span></div></div>
+      <div class="dbody">
+        <div class="val"><b>${r.part.part_code}</b> · ${r.part.name}</div>
+        <div class="stockline ${below ? 'low' : 'okk'}">
+          ${below ? '⚠️' : '✓'} Stok ${r.stock.on_hand} / ${r.stock.safety_stock} emniyet
+          <span>${below ? 'emniyet stoğu altında — muadil/sipariş önerildi' : 'yeterli'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dstep">
+      <div class="dhead"><span class="dnum">4</span>
+        <div class="dttl">Onarım Adımları<span class="dsub">Teknisyene atanan iş emri${woId ? ' · ' + woId : ''}</span></div></div>
+      <div class="dbody">
+        <ul class="steps">${steps.map(s => `<li><span class="mk">•</span><span>${s}</span></li>`).join('')}</ul>
+      </div>
+    </div>
+
+    <div class="dstep">
+      <div class="dhead"><span class="dnum">5</span>
+        <div class="dttl">Ajan Karar Zinciri<span class="dsub">Sonuca ulaşırken çağrılan araçlar (tool-use)</span></div></div>
+      <div class="dbody">
+        <div class="trace">${trace}</div>
+      </div>
+    </div>`;
 }
 
 // ---------- Muadiller ----------

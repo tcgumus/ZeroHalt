@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
 <div class="app">
@@ -69,8 +69,13 @@
             <div class="inc" id="incList"></div>
           </div>
           <div class="card diag" id="diagCard">
-            <h3>Teşhis Paneli <span id="diagSpin"></span></h3>
-            <div id="diagBody"><p class="muted-note">Soldan bir arıza seçip <b>Ajanı Çalıştır</b>'a basın. Ajan kök nedeni bulur, parça/stok kontrolü yapar, muadil önerir, sipariş taslağı ve iş emri hazırlar.</p></div>
+            <h3>🔎 Teşhis Paneli <span id="diagSpin"></span></h3>
+            <p class="card-sub">Ajanın arıza analizini adım adım gösterir: kök neden, kanıtlar, parça/stok, onarım adımları ve karar zinciri.</p>
+            <div id="diagBody"><div class="diag-empty">
+              <div class="diag-empty-ic">🔎</div>
+              <div class="diag-empty-t">Henüz teşhis çalıştırılmadı</div>
+              <div class="muted-note">Soldaki <b>Aktif Arıza Kuyruğu</b>'ndan bir arıza seçip <b>Ajanı Çalıştır</b>'a basın. Ajan kök nedeni bulur, parça/stok kontrolü yapar, muadil önerir, sipariş taslağı ve iş emri hazırlar.</div>
+            </div></div>
           </div>
         </div>
       </section>
@@ -138,6 +143,6 @@
   <div class="inp"><input id="chatInp" placeholder="Soru yazın…"><button id="chatSend">Gönder</button></div>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=2"></script>
 </body>
 </html>
