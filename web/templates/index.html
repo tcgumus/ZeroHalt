@@ -82,8 +82,34 @@
 
       <!-- PARÇA TANIMA -->
       <section id="sec-parca">
-        <div class="sec-head"><h1>Parça Tanıma</h1><span class="sub">Fotoğraf yükleyin — aynı multimodal model tanımlar</span></div>
+        <div class="sec-head"><h1>Parça Tanıma</h1><span class="sub">Fotoğraf veya video yükleyin — YOLOv11 modeli ile otomatik tespit</span></div>
+
+        <!-- YOLO Görüntü Tanıma -->
+        <div class="card" style="margin-bottom:16px">
+          <h3>🎯 YOLO Görüntü Tanıma <span style="font-size:11px;color:var(--muted);font-weight:400">(Fine-tuned YOLOv11)</span></h3>
+          <div class="drop" id="yoloDrop" style="border:2px dashed var(--accent);background:rgba(59,130,246,0.04)">
+            📷🎬 Resim veya video yüklemek için tıklayın veya sürükleyin
+            <br><span class="muted-note">Desteklenen: JPG, PNG, MP4, AVI, MOV · Orijinal boyutta analiz</span>
+            <input type="file" id="yoloFile" accept="image/*,video/*" class="hidden">
+          </div>
+          <div id="yoloPreview" style="margin-top:12px;display:none">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span id="yoloFileName" style="font-size:13px;color:var(--ink)"></span>
+              <span id="yoloFileSize" style="font-size:11px;color:var(--muted)"></span>
+              <button class="btn" id="yoloClear" style="font-size:11px;padding:4px 10px">✕ Temizle</button>
+            </div>
+            <img id="yoloPreviewImg" style="max-width:100%;max-height:200px;border-radius:8px;display:none">
+            <video id="yoloPreviewVid" style="max-width:100%;max-height:200px;border-radius:8px;display:none" controls muted></video>
+          </div>
+          <button class="btn primary" id="yoloDetectBtn" style="margin-top:12px;width:100%">🔍 Tespit Et</button>
+          <div class="muted-note" style="margin-top:14px">Örnek parçalar (tıklayıp YOLO ile tespit edin):</div>
+          <div id="yoloGallery" class="gallery" style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap"></div>
+          <div id="yoloResult" style="margin-top:14px"></div>
+        </div>
+
+        <!-- Eski metin tabanlı tanıma -->
         <div class="card">
+          <h3>📝 Metin/İpucu ile Tanıma <span style="font-size:11px;color:var(--muted);font-weight:400">(Heuristik eşleme)</span></h3>
           <div class="drop" id="drop">📷 Parça fotoğrafı yüklemek için tıklayın<br><span class="muted-note">(veya parça kodunu ipucu olarak yazın)</span>
             <input type="file" id="file" accept="image/*" class="hidden">
           </div>

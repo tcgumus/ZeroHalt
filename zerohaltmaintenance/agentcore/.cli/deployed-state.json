@@ -1,0 +1,17 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "ZeroHaltMcp": {
+            "runtimeId": "zerohaltmaintenance_ZeroHaltMcp-XtMTSw6d6n",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-west-2:487265751151:runtime/zerohaltmaintenance_ZeroHaltMcp-XtMTSw6d6n",
+            "roleArn": "arn:aws:iam::487265751151:role/AgentCore-zerohaltmainten-ApplicationAgentZeroHaltM-m8lBWezD2HOv"
+          }
+        },
+        "stackName": "AgentCore-zerohaltmaintenance-default",
+        "deployHash": "5fb6fc912a1bb162"
+      }
+    }
+  }
+}

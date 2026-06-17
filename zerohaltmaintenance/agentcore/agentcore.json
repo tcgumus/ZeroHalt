@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "zerohaltmaintenance",
+  "version": 1,
+  "managedBy": "CDK",
+  "tags": {
+    "agentcore:created-by": "agentcore-cli",
+    "agentcore:project-name": "zerohaltmaintenance"
+  },
+  "runtimes": [
+    {
+      "name": "ZeroHaltMcp",
+      "build": "CodeZip",
+      "entrypoint": "mcp_server.py",
+      "codeLocation": "app/ZeroHaltMcp/",
+      "runtimeVersion": "PYTHON_3_13",
+      "networkMode": "PUBLIC",
+      "instrumentation": {
+        "enableOtel": false
+      },
+      "protocol": "MCP"
+    }
+  ],
+  "memories": [],
+  "credentials": [],
+  "evaluators": [],
+  "onlineEvalConfigs": [],
+  "agentCoreGateways": [],
+  "policyEngines": [],
+  "configBundles": [],
+  "abTests": [],
+  "httpGateways": [],
+  "harnesses": [],
+  "datasets": [],
+  "payments": []
+}

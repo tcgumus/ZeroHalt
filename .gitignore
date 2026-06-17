@@ -18,3 +18,8 @@ _*.json
 _*.html
 _*.png
 .DS_Store
+dataset/
+.kiro
+.hypothesis
+runs/
+test

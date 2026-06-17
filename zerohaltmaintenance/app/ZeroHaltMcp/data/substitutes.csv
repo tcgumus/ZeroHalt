@@ -1,0 +1,6 @@
+part_code,substitute_code,compatibility_note,approved
+HYD-4520-B,HYD-4520-BR,"Birebir değişim — ek işlem gerekmez. Kalite onayı KG-2025-088. Tam uyumlu.",True
+HYD-4520-B,HYD-4519-B,"Flanş adaptörü gerekli — mühendislik onayı şartı var. Şartlı uyumlu.",False
+HYD-4520-B,HYD-4380-C,"Basınç sınıfı yetersiz (250 bar < 280 bar). Bu uygulamada kullanılamaz.",False
+RLM-6310-ZZ,RLM-6310-C3,"Aynı boyut; açık tip, kapaklı yerine kullanılabilir. Yağlama periyodu kontrol edilmeli.",True
+FLT-2210,FLT-2210-X,"Eşdeğer filtrasyon (10 mikron). Onaylı muadil marka.",True

@@ -314,7 +314,159 @@ function renderShortage(list) {
   });
 }
 
-// ---------- Parça tanıma ----------
+// ---------- YOLO Parça Tespiti ----------
+let yoloSelectedFile = null;
+
+$('#yoloDrop').onclick = () => $('#yoloFile').click();
+$('#yoloDrop').ondragover = e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--ok)'; };
+$('#yoloDrop').ondragleave = e => { e.currentTarget.style.borderColor = 'var(--accent)'; };
+$('#yoloDrop').ondrop = e => {
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'var(--accent)';
+  const f = e.dataTransfer.files[0];
+  if (f) setYoloFile(f);
+};
+$('#yoloFile').onchange = e => { const f = e.target.files[0]; if (f) setYoloFile(f); };
+$('#yoloClear').onclick = () => clearYoloFile();
+
+function setYoloFile(f) {
+  yoloSelectedFile = f;
+  $('#yoloPreview').style.display = 'block';
+  $('#yoloFileName').textContent = f.name;
+  $('#yoloFileSize').textContent = (f.size / 1024 / 1024).toFixed(2) + ' MB';
+  if (f.type.startsWith('image/')) {
+    const url = URL.createObjectURL(f);
+    $('#yoloPreviewImg').src = url;
+    $('#yoloPreviewImg').style.display = 'block';
+    $('#yoloPreviewVid').style.display = 'none';
+  } else if (f.type.startsWith('video/')) {
+    const url = URL.createObjectURL(f);
+    $('#yoloPreviewVid').src = url;
+    $('#yoloPreviewVid').style.display = 'block';
+    $('#yoloPreviewImg').style.display = 'none';
+  }
+  $('#yoloResult').innerHTML = '';
+}
+
+function clearYoloFile() {
+  yoloSelectedFile = null;
+  $('#yoloPreview').style.display = 'none';
+  $('#yoloPreviewImg').style.display = 'none';
+  $('#yoloPreviewVid').style.display = 'none';
+  $('#yoloFile').value = '';
+  $('#yoloResult').innerHTML = '';
+}
+
+// Galeri: örnek parçaları yükle
+async function loadYoloSamples() {
+  const samples = await api('/api/yolo/samples');
+  const g = $('#yoloGallery'); g.innerHTML = '';
+  samples.forEach(s => {
+    const card = el('div', 'yolo-sample');
+    card.style.cssText = 'cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center;width:120px;transition:all .15s';
+    card.innerHTML = `<img src="/api/yolo/sample-image/${s.image}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:600;color:var(--ink)">${s.label_tr}</div>`;
+    card.onmouseenter = () => { card.style.borderColor = 'var(--accent)'; card.style.boxShadow = '0 2px 8px rgba(59,130,246,.15)'; };
+    card.onmouseleave = () => { card.style.borderColor = 'var(--line)'; card.style.boxShadow = 'none'; };
+    card.onclick = async () => {
+      // Resmi fetch edip YOLO'ya gönder
+      const resp = await fetch(`/api/yolo/sample-image/${s.image}`);
+      const blob = await resp.blob();
+      const file = new File([blob], s.image, { type: 'image/jpeg' });
+      setYoloFile(file);
+      // Otomatik tespit başlat
+      $('#yoloDetectBtn').click();
+    };
+    g.append(card);
+  });
+}
+
+$('#yoloDetectBtn').onclick = async () => {
+  if (!yoloSelectedFile) {
+    $('#yoloResult').innerHTML = '<div class="alt warn"><div class="note">Lütfen önce bir resim veya video yükleyin.</div></div>';
+    return;
+  }
+  $('#yoloResult').innerHTML = '<span class="spin"></span> Tespit yapılıyor… (orijinal boyutta analiz)';
+  $('#yoloDetectBtn').disabled = true;
+
+  const formData = new FormData();
+  formData.append('file', yoloSelectedFile);
+
+  try {
+    const resp = await fetch('/api/yolo/detect', { method: 'POST', body: formData });
+    const r = await resp.json();
+    if (r.error) {
+      $('#yoloResult').innerHTML = `<div class="alt warn"><div class="note">❌ ${r.message}</div></div>`;
+    } else if (r.detections) {
+      renderYoloImageResult(r);
+    } else if (r.unique_detections !== undefined) {
+      renderYoloVideoResult(r);
+    }
+  } catch (e) {
+    $('#yoloResult').innerHTML = `<div class="alt warn"><div class="note">❌ Bağlantı hatası: ${e.message}</div></div>`;
+  }
+  $('#yoloDetectBtn').disabled = false;
+};
+
+function renderYoloImageResult(r) {
+  let detsHtml = '';
+  if (r.detections.length) {
+    detsHtml = r.detections.map(d => {
+      const partInfo = d.part_info ? `<div class="stk">Stok: ${d.part_info.on_hand}/${d.part_info.safety_stock} · ${d.part_info.name}</div>` : '';
+      return `<div class="alt ok" style="margin-bottom:6px">
+        <div class="h"><span class="c">${d.label_tr}</span>
+          <span class="apill" style="background:var(--okbg);color:var(--ok)">%${Math.round(d.confidence*100)}</span>
+          ${d.part_code ? `<span class="apill">${d.part_code}</span>` : ''}
+        </div>
+        <div class="note">Bbox: [${d.bbox.join(', ')}]</div>
+        ${partInfo}
+      </div>`;
+    }).join('');
+  } else {
+    detsHtml = '<div class="alt warn"><div class="note">Parça tespit edilemedi.</div></div>';
+  }
+
+  $('#yoloResult').innerHTML = `
+    <div style="margin-bottom:10px;font-weight:600;font-size:14px">📊 Sonuç: ${r.summary}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Orijinal boyut: ${r.original_size[0]}×${r.original_size[1]} px</div>
+    ${r.annotated_b64 ? `<img src="data:image/jpeg;base64,${r.annotated_b64}" style="max-width:100%;border-radius:8px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)">` : ''}
+    <div>${detsHtml}</div>`;
+}
+
+function renderYoloVideoResult(r) {
+  let detsHtml = '';
+  if (r.unique_detections.length) {
+    detsHtml = r.unique_detections.map(d => {
+      const partInfo = d.part_info ? `<div class="stk">Stok: ${d.part_info.on_hand}/${d.part_info.safety_stock} · ${d.part_info.name}</div>` : '';
+      return `<div class="alt ok" style="margin-bottom:6px">
+        <div class="h"><span class="c">${d.label_tr}</span>
+          <span class="apill" style="background:var(--okbg);color:var(--ok)">Maks %${Math.round(d.max_confidence*100)}</span>
+          ${d.part_code ? `<span class="apill">${d.part_code}</span>` : ''}
+        </div>
+        ${partInfo}
+      </div>`;
+    }).join('');
+  } else {
+    detsHtml = '<div class="alt warn"><div class="note">Video boyunca parça tespit edilemedi.</div></div>';
+  }
+
+  const timelineHtml = r.detections_per_frame.filter(f => f.count > 0).slice(0, 10).map(f =>
+    `<div style="font-size:11px;padding:3px 0;border-bottom:1px solid var(--line)">
+      ⏱ ${f.time_sec}s (frame ${f.frame_idx}) — ${f.count} tespit: ${f.detections.map(d => d.label_tr).join(', ')}
+    </div>`
+  ).join('');
+
+  $('#yoloResult').innerHTML = `
+    <div style="margin-bottom:10px;font-weight:600;font-size:14px">📊 Sonuç: ${r.summary}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Video: ${r.original_size[0]}×${r.original_size[1]} px · ${r.fps} FPS · ${r.total_frames} toplam frame · ${r.frames_analyzed} analiz edildi
+    </div>
+    ${r.best_frame_b64 ? `<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">En iyi frame (en çok tespit):</div><img src="data:image/jpeg;base64,${r.best_frame_b64}" style="max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)"></div>` : ''}
+    <div style="margin-bottom:12px">${detsHtml}</div>
+    ${timelineHtml ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">⏰ Zaman Çizelgesi</div>${timelineHtml}</div>` : ''}`;
+}
+
+// ---------- Parça tanıma (eski) ----------
 $('#drop').onclick = () => $('#file').click();
 $('#file').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
@@ -392,4 +544,5 @@ loadOverview();
 loadWorkOrders();
 loadPreventive();
 loadParts();
+loadYoloSamples();
 initChat();

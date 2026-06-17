@@ -106,6 +106,27 @@ def parts():
     return jsonify(datasource.list_parts())
 
 
+@app.get("/api/yolo/samples")
+def yolo_samples():
+    """YOLO modelinin tanıdığı sınıflar için örnek resimleri döndürür."""
+    samples_dir = Path(__file__).resolve().parent.parent / "dataset" / "train" / "images"
+    classes = [
+        {"class": "alternator", "label_tr": "Alternatör", "image": "alternator_train_0000.jpg"},
+        {"class": "brake_disc", "label_tr": "Fren Diski", "image": "brake_disc_train_0000.jpg"},
+        {"class": "engine_control", "label_tr": "Motor Kontrol Ünitesi", "image": "engine_control_train_0000.jpg"},
+        {"class": "hydraulic_filter", "label_tr": "Hidrolik Filtre", "image": "hydraulic_filter_train_0000.jpg"},
+        {"class": "piston", "label_tr": "Piston", "image": "piston_train_0000.jpg"},
+    ]
+    return jsonify(classes)
+
+
+@app.get("/api/yolo/sample-image/<filename>")
+def yolo_sample_image(filename: str):
+    """Dataset train klasöründen örnek resim sunar."""
+    samples_dir = Path(__file__).resolve().parent.parent / "dataset" / "train" / "images"
+    return send_from_directory(samples_dir, filename)
+
+
 @app.post("/api/identify")
 def identify():
     body = request.get_json(force=True) or {}
@@ -114,6 +135,57 @@ def identify():
     if result.get("part_code"):
         result["part_info"] = datasource.get_part(result["part_code"])
     return jsonify(result)
+
+
+@app.post("/api/yolo/detect")
+def yolo_detect():
+    """YOLO ile resim veya video üzerinde parça tespiti.
+
+    Multipart form: file alanı (resim veya video).
+    JSON body: {"image_b64": "..."} veya {"video_b64": "..."}.
+    """
+    from src.tools.yolo_detect import detect_image, detect_video
+
+    # Multipart file upload
+    if "file" in request.files:
+        f = request.files["file"]
+        data = f.read()
+        mime = f.content_type or ""
+        if mime.startswith("video/"):
+            result = detect_video(video_bytes=data)
+        else:
+            result = detect_image(image_bytes=data)
+        # Parça bilgisi ekle
+        _enrich_yolo_result(result)
+        return jsonify(result)
+
+    # JSON body
+    body = request.get_json(force=True) or {}
+    if body.get("video_b64"):
+        result = detect_video(video_b64=body["video_b64"])
+    elif body.get("image_b64"):
+        result = detect_image(image_b64=body["image_b64"])
+    else:
+        return jsonify({"error": True, "message": "file, image_b64 veya video_b64 gerekli."}), 400
+
+    _enrich_yolo_result(result)
+    return jsonify(result)
+
+
+def _enrich_yolo_result(result: dict) -> None:
+    """Tespit sonuçlarına parça stok bilgisi ekler."""
+    # Resim tespiti
+    for det in result.get("detections", []):
+        if det.get("part_code"):
+            info = datasource.get_part(det["part_code"])
+            if info:
+                det["part_info"] = info
+    # Video tespiti
+    for det in result.get("unique_detections", []):
+        if det.get("part_code"):
+            info = datasource.get_part(det["part_code"])
+            if info:
+                det["part_info"] = info
 
 
 @app.get("/api/preventive")
