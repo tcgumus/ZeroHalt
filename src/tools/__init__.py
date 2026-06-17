@@ -163,6 +163,28 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "inputSchema": {"json": {"type": "object", "properties": {}}},
         }
     },
+    {
+        "toolSpec": {
+            "name": "get_maintenance_history",
+            "description": "Bakım geçmişini arıza kodu ve/veya makine ID'ye göre filtreler. Geçmiş onarımları, kök nedenleri ve tarihleri döndürür.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "fault_code": {"type": "string", "description": "Arıza kodu (opsiyonel)."},
+                        "machine_id": {"type": "string", "description": "Makine kimliği (opsiyonel)."},
+                    },
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "get_fault_frequency",
+            "description": "Arıza frekansı raporu — hangi arıza kodlarının en çok tekrar ettiğini sayar.",
+            "inputSchema": {"json": {"type": "object", "properties": {}}},
+        }
+    },
 ]
 
 # tool adı -> çağrılabilir fonksiyon.
@@ -177,6 +199,8 @@ _DISPATCH: dict[str, Callable[..., Any]] = {
     "preventive_insights": preventive_insights,
     "detect_recurring_faults": detect_recurring_faults,
     "predict_part_shortage": predict_part_shortage,
+    "get_maintenance_history": lambda fault_code=None, machine_id=None: __import__("datasource").get_maintenance_history(fault_code, machine_id),
+    "get_fault_frequency": lambda: __import__("datasource").get_fault_frequency(),
 }
 
 

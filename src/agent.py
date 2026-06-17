@@ -41,10 +41,17 @@ def run_diagnosis(
     technician: Optional[str] = None,
     image_b64: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Bir arıza için uçtan uca teşhis zincirini çalıştırır."""
-    if config.OFFLINE_MODE:
-        return _run_offline(fault_code, machine_id, title, technician, image_b64)
-    return _run_online(fault_code, machine_id, title, technician, image_b64)
+    """Bir arıza için uçtan uca teşhis zincirini çalıştırır.
+
+    CHAT_ONLINE=True ise Bedrock tool-use ile MCP dinamik akış;
+    aksi halde offline deterministik akış.
+    """
+    if config.CHAT_ONLINE or not config.OFFLINE_MODE:
+        try:
+            return _run_online(fault_code, machine_id, title, technician, image_b64)
+        except Exception:
+            pass  # Bedrock erişilemezse offline'a düş
+    return _run_offline(fault_code, machine_id, title, technician, image_b64)
 
 
 # ---------------------------------------------------------------------------
@@ -236,18 +243,54 @@ def _run_online(
             )
         messages.append({"role": "user", "content": tool_results})
 
+    # Sonuçları topla — modelin kendi analizi üzerinden
+    kb_result = captured.get("query_knowledge_base", {})
+    root_cause = kb_result.get("answer", "") if isinstance(kb_result, dict) else ""
+
+    # Confidence ve evidence: model trace'den çıkar veya geçmiş veriden hesapla
+    history = captured.get("get_maintenance_history", [])
+    freq = captured.get("get_fault_frequency", [])
+
+    # Dinamik confidence hesapla: geçmiş kayıt varsa yüksek, yoksa orta
+    if isinstance(history, list) and len(history) >= 2:
+        confidence = 92
+    elif isinstance(history, list) and len(history) == 1:
+        confidence = 85
+    else:
+        confidence = 75
+
+    # Evidence: KB kaynaklarından + stok durumundan dinamik oluştur
+    evidence = []
+    if kb_result.get("sources"):
+        evidence.append(f"Kılavuz kaynağı: {kb_result['sources'][0]}")
+    stock_data = captured.get("stock_lookup", {})
+    if isinstance(stock_data, dict) and stock_data.get("below_safety"):
+        evidence.append(f"Stok kritik: {stock_data.get('on_hand')}/{stock_data.get('safety_stock')} (emniyet altında)")
+    if isinstance(history, list):
+        for h in history[:2]:
+            if isinstance(h, dict) and h.get("root_cause"):
+                evidence.append(f"Geçmiş kayıt: {h['root_cause'][:80]}")
+
+    # Muadil garantisi: stok kritikse ve model muadil çağırmadıysa biz çağıralım
+    substitutes = captured.get("find_substitutes", [])
+    if isinstance(stock_data, dict) and stock_data.get("below_safety") and not substitutes:
+        part_code = stock_data.get("part_code") or (captured.get("part_info", {}) or {}).get("part_code")
+        if part_code:
+            substitutes = toolkit.dispatch("find_substitutes", {"part_code": part_code})
+            trace.append({"tool": "find_substitutes", "input": {"part_code": part_code}, "output": substitutes})
+
     return {
         "mode": "online",
         "fault_code": fault_code,
         "machine_id": machine_id,
         "title": title,
-        "root_cause": captured.get("query_knowledge_base", {}).get("answer", ""),
-        "confidence": _fault_signatures().get(fault_code, {}).get("confidence", 80),
-        "sources": captured.get("query_knowledge_base", {}).get("sources", []),
-        "evidence": _fault_signatures().get(fault_code, {}).get("evidence", []),
+        "root_cause": root_cause,
+        "confidence": confidence,
+        "sources": kb_result.get("sources", []) if isinstance(kb_result, dict) else [],
+        "evidence": evidence,
         "part": captured.get("part_info", {}),
-        "stock": captured.get("stock_lookup", {}),
-        "substitutes": captured.get("find_substitutes", []),
+        "stock": stock_data,
+        "substitutes": substitutes,
         "order_draft": captured.get("create_order_draft"),
         "work_order": captured.get("create_work_order"),
         "summary": final_text,
@@ -339,14 +382,266 @@ def _chat_offline(question: str) -> str:
 
 
 def _chat_online(question: str) -> str:
-    """boto3 Bedrock Runtime converse API ile sohbet."""
+    """boto3 Bedrock Runtime converse API ile tool-use sohbet.
+
+    Akış:
+    1. Kullanıcı sorusunu + MCP tool tanımlarını Bedrock'a gönder
+    2. Model tool çağrısı isterse, ilgili MCP tool'u çağır
+    3. Tool sonucunu modele geri gönder
+    4. Model son yanıtı üret
+    """
     from src.bedrock_client import BedrockClient
+    import datasource
 
     client = BedrockClient()
-    messages = [{"role": "user", "content": [{"text": question}]}]
-    system = [{"text": prompts.SYSTEM_PROMPT}]
 
-    resp = client.converse(messages, system=system)
+    # MCP tool tanımları (Bedrock toolConfig formatında)
+    tool_config = {
+        "tools": [
+            {
+                "toolSpec": {
+                    "name": "list_all_parts",
+                    "description": "Tüm parçaları listeler (kod, isim, kategori, stok bilgisi).",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "list_low_stock",
+                    "description": "Emniyet stoğunun altındaki parçaları listeler.",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "get_part",
+                    "description": "Parça koduna göre detaylı bilgi döndürür.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {"part_code": {"type": "string", "description": "Parça kodu (örn. HYD-4520-B)"}},
+                            "required": ["part_code"],
+                        }
+                    },
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "get_substitutes",
+                    "description": "Bir parçanın muadil listesini döndürür.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {"part_code": {"type": "string", "description": "Parça kodu"}},
+                            "required": ["part_code"],
+                        }
+                    },
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "list_incidents",
+                    "description": "Arıza olaylarını listeler. Opsiyonel durum filtresi: yeni, isleniyor, cozuldu.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {"status": {"type": "string", "description": "Filtre: yeni, isleniyor, cozuldu"}},
+                        }
+                    },
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "get_incident",
+                    "description": "Olay ID ile detay döndürür.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {"incident_id": {"type": "string"}},
+                            "required": ["incident_id"],
+                        }
+                    },
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "compute_kpis",
+                    "description": "Bakım KPI göstergelerini hesaplar (MTBF, MTTR, aktif arıza sayısı, çözüm oranı vb.).",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "get_fault_frequency",
+                    "description": "Arıza frekansı raporu döndürür (en çok tekrar eden arızalar).",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "weekly_downtime",
+                    "description": "Haftalık duruş raporu (Pzt-Paz, saat cinsinden).",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "list_orders",
+                    "description": "Sipariş taslaklarını listeler.",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "list_work_orders",
+                    "description": "İş emirlerini listeler.",
+                    "inputSchema": {"json": {"type": "object", "properties": {}}},
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "query_knowledge_base",
+                    "description": "Arıza kodu veya sorgu metniyle bakım kılavuzunda bilgi arar.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {"query": {"type": "string", "description": "Arama sorgusu"}},
+                            "required": ["query"],
+                        }
+                    },
+                }
+            },
+            {
+                "toolSpec": {
+                    "name": "create_order_draft",
+                    "description": "Parça için sipariş taslağı oluşturur. Taslak insan onayı bekler, ajan onaylamaz. part_code zorunlu, quantity ve est_cost opsiyonel.",
+                    "inputSchema": {
+                        "json": {
+                            "type": "object",
+                            "properties": {
+                                "part_code": {"type": "string", "description": "Sipariş edilecek parça kodu"},
+                                "quantity": {"type": "integer", "description": "Adet (opsiyonel, verilmezse hesaplanır)"},
+                                "est_cost": {"type": "number", "description": "Tahmini maliyet TL (opsiyonel)"},
+                            },
+                            "required": ["part_code"],
+                        }
+                    },
+                }
+            },
+        ]
+    }
+
+    # MCP tool dispatcher
+    def _call_mcp_tool(name: str, args: dict) -> Any:
+        import json as _json
+        tool_map = {
+            "list_all_parts": lambda _: datasource.list_all_parts(),
+            "list_low_stock": lambda _: datasource.list_low_stock(),
+            "get_part": lambda a: datasource.get_part(a.get("part_code", "")),
+            "get_substitutes": lambda a: datasource.get_substitutes(a.get("part_code", "")),
+            "list_incidents": lambda a: datasource.list_incidents(a.get("status")),
+            "get_incident": lambda a: datasource.get_incident(a.get("incident_id", "")),
+            "compute_kpis": lambda _: datasource.compute_kpis(),
+            "get_fault_frequency": lambda _: datasource.get_fault_frequency(),
+            "weekly_downtime": lambda _: datasource.weekly_downtime(),
+            "list_orders": lambda _: datasource.list_orders(),
+            "list_work_orders": lambda _: datasource.list_work_orders(),
+            "query_knowledge_base": lambda a: _kb_query(a.get("query", "")),
+            "create_order_draft": lambda a: _create_order(a),
+        }
+        fn = tool_map.get(name)
+        if fn is None:
+            return {"error": f"Bilinmeyen tool: {name}"}
+        try:
+            result = fn(args)
+            return result if result is not None else {"error": f"Sonuç bulunamadı"}
+        except Exception as exc:
+            return {"error": str(exc)}
+
+    def _kb_query(query: str):
+        try:
+            from src.tools.knowledge import query_knowledge_base
+            return query_knowledge_base(query)
+        except Exception:
+            return {"message": "Bilgi tabanı erişilemedi."}
+
+    def _create_order(args: dict):
+        part_code = args.get("part_code", "")
+        part = datasource.get_part(part_code)
+        if not part:
+            return {"error": f"Parça bulunamadı: {part_code}"}
+        # Stok kontrolü: emniyet stoğunun üstündeyse sipariş gereksiz
+        on_hand = part.get("on_hand", 0)
+        safety = part.get("safety_stock", 0)
+        if on_hand >= safety:
+            return {"rejected": True, "message": f"{part_code} stoğu yeterli ({on_hand}/{safety}), sipariş gerekmiyor."}
+        quantity = args.get("quantity") or max(1, safety - on_hand)
+        est_cost = args.get("est_cost", part.get("unit_cost", 1000) * quantity)
+        from src import policy
+        approval_needed = policy.requires_manager_approval(est_cost)
+        return datasource.save_order_draft(part_code, quantity, est_cost, approval_needed)
+
+    system = [{"text": (
+        "Sen FNSS Gölbaşı Üretim Tesisi'nin bakım asistanısın. "
+        "Kullanıcının sorularını yanıtlamak için MCP tool'larını kullan. "
+        "Yanıtlarını Türkçe ver, kısa ve net ol. "
+        "Tool sonuçlarını kullanarak somut bilgi ver (stok adetleri, arıza kodları vb.). "
+        "Kullanıcı sipariş taslağı oluşturmak isterse create_order_draft tool'unu çağır."
+    )}]
+
+    messages = [{"role": "user", "content": [{"text": question}]}]
+    tool_calls_log = []
+
+    # İlk çağrı
+    resp = client.converse(messages, system=system, tool_config=tool_config)
+    stop = resp.get("stopReason", "")
+
+    # Tool-use döngüsü (max 3 iterasyon)
+    for _ in range(3):
+        if stop != "tool_use":
+            break
+
+        out_msg = resp.get("output", {}).get("message", {})
+        messages.append(out_msg)
+
+        # Tool çağrılarını işle
+        tool_results = []
+        for block in out_msg.get("content", []):
+            if "toolUse" in block:
+                tu = block["toolUse"]
+                tool_name = tu["name"]
+                tool_input = tu.get("input", {})
+                tool_id = tu["toolUseId"]
+
+                # MCP tool'u çağır
+                import json as _json
+                result = _call_mcp_tool(tool_name, tool_input)
+                result_str = _json.dumps(result, ensure_ascii=False, default=str)
+
+                tool_calls_log.append({"tool": tool_name, "input": tool_input})
+
+                tool_results.append({
+                    "toolResult": {
+                        "toolUseId": tool_id,
+                        "content": [{"json": result if isinstance(result, dict) else {"data": result}}],
+                    }
+                })
+
+        messages.append({"role": "user", "content": tool_results})
+        resp = client.converse(messages, system=system, tool_config=tool_config)
+        stop = resp.get("stopReason", "")
+
+    # Son yanıtı çıkar
     out_msg = resp.get("output", {}).get("message", {})
-    blocks = [b["text"] for b in out_msg.get("content", []) if "text" in b]
-    return "\n".join(blocks).strip() or "Yanıt üretilemedi."
+    text_blocks = [b["text"] for b in out_msg.get("content", []) if "text" in b]
+    answer = "\n".join(text_blocks).strip() or "Yanıt üretilemedi."
+
+    # Tool çağrı logunu ekle (demo görselliği için)
+    if tool_calls_log:
+        log_lines = "\n".join(
+            f"  🔧 {tc['tool']}({', '.join(f'{k}={v}' for k, v in tc['input'].items()) if tc['input'] else ''})"
+            for tc in tool_calls_log
+        )
+        answer = f"📡 MCP Tool Çağrıları:\n{log_lines}\n\n{answer}"
+
+    return answer

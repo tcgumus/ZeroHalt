@@ -42,6 +42,7 @@ def initial_user_message(fault_code: str, machine_id: str, title: str) -> str:
         f"- Arıza kodu: {fault_code}\n"
         f"- Açıklama: {title}\n\n"
         "Lütfen kök nedeni teşhis et, parça ve stok durumunu kontrol et, "
-        "gerekiyorsa muadil öner ve sipariş taslağı hazırla, iş emri oluştur ve "
-        "süreci Türkçe özetle."
+        "gerekiyorsa muadil öner ve sipariş taslağı hazırla. "
+        "İş emri OLUŞTURMA — bu adım kullanıcı tarafından manuel tetiklenecek. "
+        "Süreci Türkçe özetle."
     )
