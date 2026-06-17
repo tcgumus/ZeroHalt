@@ -214,10 +214,27 @@ async function loadWorkOrders() {
         <span class="c">${w.work_order_id}</span>
         <span class="nm">${w.part_code} · Teknisyen: ${w.technician}</span>
         <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span>
-        <span class="wo-caret">▾</span>
+        <span class="wo-caret">›</span>
       </div>
-      <div class="wo-sub">${steps.length} adım · Olay: ${w.fault_id} · ${w.created_at}</div>
-      <div class="wo-detail">
+      <div class="wo-sub">${steps.length} adım · Olay: ${w.fault_id} · ${w.created_at}</div>`;
+    card.querySelector('.wo-head').onclick = () => openWorkOrderModal(w);
+    box.append(card);
+  });
+}
+
+function openWorkOrderModal(w) {
+  const steps = w.steps || [];
+  closeWorkOrderModal();   // varsa önceki modalı kapat
+  const overlay = el('div', 'wo-modal-overlay');
+  overlay.id = 'woModal';
+  overlay.innerHTML = `
+    <div class="wo-modal" role="dialog" aria-modal="true" aria-label="İş emri detayı">
+      <button class="wo-modal-close" aria-label="Kapat">&times;</button>
+      <div class="wo-modal-head">
+        <span class="c">${w.work_order_id}</span>
+        <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span>
+      </div>
+      <div class="wo-modal-body">
         <div class="wo-row"><div class="lbl">Kök Neden</div><div class="val">${w.root_cause || '—'}</div></div>
         <div class="wo-row"><div class="lbl">Onarım Adımları</div>
           <ul class="steps">${steps.map(s => `<li><span class="mk">•</span><span>${s}</span></li>`).join('') || '<li>—</li>'}</ul></div>
@@ -226,10 +243,23 @@ async function loadWorkOrders() {
           <span>Teknisyen: <b>${w.technician}</b></span><span>Durum: <b>${w.status}</b></span>
           <span>Oluşturma: <b>${w.created_at}</b></span>
         </div>
-      </div>`;
-    card.querySelector('.wo-head').onclick = () => card.classList.toggle('open');
-    box.append(card);
-  });
+      </div>
+    </div>`;
+  // Kapatma: × butonu, arka plana tıklama, Esc
+  overlay.querySelector('.wo-modal-close').onclick = closeWorkOrderModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeWorkOrderModal(); };
+  document.body.append(overlay);
+  document.addEventListener('keydown', _woEscHandler);
+}
+
+function closeWorkOrderModal() {
+  const m = $('#woModal');
+  if (m) m.remove();
+  document.removeEventListener('keydown', _woEscHandler);
+}
+
+function _woEscHandler(e) {
+  if (e.key === 'Escape') closeWorkOrderModal();
 }
 
 // ---------- Grafik / stok ----------

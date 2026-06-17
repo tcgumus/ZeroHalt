@@ -33,6 +33,7 @@ header img{height:38px;width:auto;display:block}
 .brandlogos{display:flex;align-items:center;gap:18px;padding-right:4px}
 .brandlogos img{display:block;width:auto}
 .brand-deloitte{height:24px}
+.brand-mext{height:26px}
 .brand-aws{height:34px}
 .user{display:flex;align-items:center;gap:10px;padding-left:18px;border-left:1px solid var(--line)}
 .avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;
@@ -196,25 +197,38 @@ section{display:flex;flex-direction:column;gap:14px}
 .order .acts{display:flex;gap:10px;margin-top:12px}
 .order .status-final{font-size:13px;font-weight:600;margin-top:10px}
 
-/* iş emri kartı (tıklayınca detay açılır) */
+/* iş emri kartı (tıklayınca modal açılır) */
 .wo-card{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff;overflow:hidden}
 .wo-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
 .wo-head:hover{background:#F7F9FD}
 .wo-head .c{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--navy)}
 .wo-head .nm{font-size:12px;color:var(--muted)}
 .wo-head .apill{margin-left:auto;font-size:10px;font-weight:700;border-radius:999px;padding:3px 9px}
-.wo-head .wo-caret{font-size:12px;color:var(--muted);transition:transform .18s}
-.wo-card.open .wo-head{background:#F7F9FD}
-.wo-card.open .wo-caret{transform:rotate(180deg)}
+.wo-head .wo-caret{font-size:16px;color:var(--muted);font-weight:700}
 .wo-sub{font-size:11px;color:var(--muted);padding:0 14px 12px}
-.wo-detail{display:none;border-top:1px solid var(--line);padding:14px;background:#FAFBFD}
-.wo-card.open .wo-detail{display:block}
 .wo-row{margin-bottom:12px}
 .wo-row .lbl{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
 .wo-row .val{font-size:13px;color:var(--ink);line-height:1.55}
 .wo-metarow{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:var(--muted);
   border-top:1px dashed var(--line);padding-top:10px}
 .wo-metarow b{color:var(--ink)}
+
+/* iş emri detay modalı */
+.wo-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1000;
+  display:flex;align-items:flex-start;justify-content:center;padding:48px 16px;overflow-y:auto;
+  animation:wo-fade .15s ease}
+.wo-modal{position:relative;background:#fff;border-radius:14px;width:100%;max-width:680px;
+  box-shadow:0 24px 64px rgba(15,23,42,.35);animation:wo-pop .18s ease}
+.wo-modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;
+  background:#F1F4F9;color:var(--muted);border-radius:8px;font-size:20px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.wo-modal-close:hover{background:#E2E8F2;color:var(--ink)}
+.wo-modal-head{display:flex;align-items:center;gap:12px;padding:18px 56px 16px 20px;border-bottom:1px solid var(--line)}
+.wo-modal-head .c{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--navy)}
+.wo-modal-head .apill{font-size:10px;font-weight:700;border-radius:999px;padding:3px 9px}
+.wo-modal-body{padding:18px 20px}
+@keyframes wo-fade{from{opacity:0}to{opacity:1}}
+@keyframes wo-pop{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
 
 /* bars */
 .bars{display:flex;align-items:flex-end;gap:14px;height:160px;padding-top:8px}
