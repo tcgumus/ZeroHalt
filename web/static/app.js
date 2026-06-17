@@ -18,10 +18,6 @@ async function loadOverview() {
     ['Aktif Arıza', k.aktif_ariza, 'açık olay', true],
     ['Kritik Stok Kalemi', k.kritik_stok, 'emniyet stoğu altında', true],
     ['Bekleyen Sipariş', k.bekleyen_siparis, 'insan onayı bekliyor', false],
-    ['Haftalık Duruş', k.haftalik_durus + ' s', 'son 7 gün', false],
-    ['MTBF', (k.mtbf_gun != null ? k.mtbf_gun : '—') + ' g', 'arızalar arası ort.', false],
-    ['MTTR', (k.mttr_saat != null ? k.mttr_saat : '—') + ' s', 'ort. çözüm süresi', false],
-    ['Çözüm Oranı', (k.cozum_orani != null ? k.cozum_orani : 0) + '%', 'çözülen / toplam', false],
   ];
   $('#kpis').innerHTML = '';
   cards.forEach(([l, v, s, red]) => {
@@ -30,17 +26,18 @@ async function loadOverview() {
     $('#kpis').append(c);
   });
 
-  $('#navAriza').textContent = k.aktif_ariza;
-  $('#navSip').textContent = k.bekleyen_siparis;
-
   renderIncidents();
   renderBars(d.downtime);
   renderLow(d.low_stock);
 }
 
+let incidentsExpanded = false;
+const INCIDENTS_LIMIT = 4;
+
 function renderIncidents() {
   const box = $('#incList'); box.innerHTML = '';
-  incidents.forEach(inc => {
+  const visible = incidentsExpanded ? incidents : incidents.slice(0, INCIDENTS_LIMIT);
+  visible.forEach(inc => {
     const row = el('div', 'inc-row' + (inc.incident_id === (selectedIncident && selectedIncident.incident_id) ? ' sel' : ''));
     row.append(
       (() => { const t = el('div', 'top'); t.append(el('span', 'ttl', inc.title), el('span', 'tag ' + inc.status, statusLabel(inc.status))); return t; })(),
@@ -50,6 +47,12 @@ function renderIncidents() {
     row.onclick = () => selectIncident(inc);
     box.append(row);
   });
+  if (incidents.length > INCIDENTS_LIMIT) {
+    const btn = el('button', 'btn', incidentsExpanded ? '▲ Daha az göster' : `▼ Tümünü göster (${incidents.length})`);
+    btn.style.cssText = 'width:100%;margin-top:8px;font-size:12px;padding:8px';
+    btn.onclick = () => { incidentsExpanded = !incidentsExpanded; renderIncidents(); };
+    box.append(btn);
+  }
 }
 const statusLabel = s => ({ yeni: 'Yeni', isleniyor: 'İşleniyor', cozuldu: 'Çözüldü' }[s] || s);
 
@@ -143,7 +146,58 @@ function renderDiagnosis(r) {
       <div class="dbody">
         <div class="trace">${trace}</div>
       </div>
+    </div>
+
+    <div class="dstep" style="border-left:3px solid var(--accent);background:rgba(59,130,246,0.03)">
+      <div class="dhead"><span class="dnum" style="background:var(--accent)">⚡</span>
+        <div class="dttl">İş Emri<span class="dsub">MCP üzerinden dinamik iş emri oluştur</span></div></div>
+      <div class="dbody">
+        <button class="btn primary" id="createWoBtn" style="width:100%">📋 İş Emri Oluştur (MCP)</button>
+        <div id="woCreateResult" style="margin-top:10px"></div>
+      </div>
     </div>`;
+
+  document.getElementById('createWoBtn').onclick = () => createWorkOrderFromDiag(r);
+}
+
+async function createWorkOrderFromDiag(diagResult) {
+  const btn = document.getElementById('createWoBtn');
+  const resultDiv = document.getElementById('woCreateResult');
+  btn.disabled = true;
+  btn.textContent = '⏳ MCP ile iş emri oluşturuluyor...';
+
+  try {
+    const r = await api('/api/work_order/create_from_diag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fault_code: diagResult.fault_code,
+        machine_id: diagResult.machine_id,
+        root_cause: diagResult.root_cause,
+        part_code: diagResult.part ? diagResult.part.part_code : '',
+      }),
+    });
+    if (r.error) {
+      resultDiv.innerHTML = `<div class="alt warn"><div class="note">❌ ${r.error}</div></div>`;
+      btn.disabled = false;
+      btn.textContent = '📋 İş Emri Oluştur (MCP)';
+    } else {
+      const toolsHtml = (r.tools_called || []).map(t => `🔧 ${t}`).join('<br>');
+      resultDiv.innerHTML = `
+        <div class="alt ok">
+          <div class="h"><span class="c">${r.work_order_id}</span><span class="apill" style="background:var(--okbg);color:var(--ok)">Oluşturuldu</span></div>
+          <div class="note">Teknisyen: <b>${r.technician}</b> · Parça: <b>${r.part_code}</b></div>
+          <ul class="steps">${(r.steps || []).map(s => '<li><span class="mk">•</span><span>' + s + '</span></li>').join('')}</ul>
+          ${toolsHtml ? '<div class="muted-note" style="margin-top:8px">📡 MCP Tool Çağrıları:<br>' + toolsHtml + '</div>' : ''}
+        </div>`;
+      btn.textContent = '✓ İş Emri Oluşturuldu';
+      loadWorkOrders();
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="alt warn"><div class="note">❌ ${e.message}</div></div>`;
+    btn.disabled = false;
+    btn.textContent = '📋 İş Emri Oluştur (MCP)';
+  }
 }
 
 // ---------- Muadiller ----------
@@ -292,7 +346,6 @@ async function loadPreventive() {
   renderAlerts(alerts);
   renderRecurring(d.recurring_faults || []);
   renderShortage(d.part_shortages || []);
-  $('#navOnleyici').textContent = alerts.length;
   $('#alertCount').textContent = alerts.length + ' uyarı';
 }
 function lvlColors(level) {
@@ -387,30 +440,6 @@ function clearYoloFile() {
   $('#yoloResult').innerHTML = '';
 }
 
-// Galeri: örnek parçaları yükle
-async function loadYoloSamples() {
-  const samples = await api('/api/yolo/samples');
-  const g = $('#yoloGallery'); g.innerHTML = '';
-  samples.forEach(s => {
-    const card = el('div', 'yolo-sample');
-    card.style.cssText = 'cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center;width:120px;transition:all .15s';
-    card.innerHTML = `<img src="/api/yolo/sample-image/${s.image}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:4px">
-      <div style="font-size:11px;font-weight:600;color:var(--ink)">${s.label_tr}</div>`;
-    card.onmouseenter = () => { card.style.borderColor = 'var(--accent)'; card.style.boxShadow = '0 2px 8px rgba(59,130,246,.15)'; };
-    card.onmouseleave = () => { card.style.borderColor = 'var(--line)'; card.style.boxShadow = 'none'; };
-    card.onclick = async () => {
-      // Resmi fetch edip YOLO'ya gönder
-      const resp = await fetch(`/api/yolo/sample-image/${s.image}`);
-      const blob = await resp.blob();
-      const file = new File([blob], s.image, { type: 'image/jpeg' });
-      setYoloFile(file);
-      // Otomatik tespit başlat
-      $('#yoloDetectBtn').click();
-    };
-    g.append(card);
-  });
-}
-
 $('#yoloDetectBtn').onclick = async () => {
   if (!yoloSelectedFile) {
     $('#yoloResult').innerHTML = '<div class="alt warn"><div class="note">Lütfen önce bir resim veya video yükleyin.</div></div>';
@@ -496,53 +525,15 @@ function renderYoloVideoResult(r) {
     ${timelineHtml ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">⏰ Zaman Çizelgesi</div>${timelineHtml}</div>` : ''}`;
 }
 
-// ---------- Parça tanıma (eski) ----------
-$('#drop').onclick = () => $('#file').click();
-$('#file').onchange = e => {
-  const f = e.target.files[0]; if (!f) return;
-  const rd = new FileReader();
-  // Dosya adını ipucu olarak gönder — offline modda kod eşleşmesi için.
-  rd.onload = () => identify(rd.result.split(',')[1], f.name);
-  rd.readAsDataURL(f);
-};
-$('#identBtn').onclick = () => identify(null, $('#hintInp').value.trim());
-
-async function loadParts() {
-  const parts = await api('/api/parts');
-  const g = $('#partGallery'); g.innerHTML = '';
-  parts.forEach(p => {
-    const chip = el('button', 'gchip', `<b>${p.part_code}</b><span>${p.name}</span>`);
-    chip.onclick = () => identify(null, p.part_code);
-    g.append(chip);
-  });
-}
-
-async function identify(b64, hint) {
-  $('#identOut').innerHTML = '<span class="spin"></span> Tanımlanıyor…';
-  const r = await api('/api/identify', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_b64: b64, hint })
-  });
-  const others = (r.candidates || []).filter(c => c.part_code !== r.part_code);
-  const candHtml = others.length
-    ? `<div class="stk">Diğer adaylar: ${others.map(c => `<button class="cand" data-c="${c.part_code}">${c.part_code} (%${Math.round(c.confidence * 100)})</button>`).join(' ')}</div>`
-    : '';
-  if (r.part_code) {
-    const pi = r.part_info || {};
-    $('#identOut').innerHTML = `<div class="alt ok"><div class="h"><span class="c">${r.part_code}</span><span class="nm">${r.name}</span>
-        <span class="apill" style="background:var(--okbg);color:var(--ok)">Güven %${Math.round((r.confidence || 0) * 100)}</span></div>
-      <div class="note">${pi.specs || ''}</div>
-      <div class="stk">Kaynak: ${r.source} · Stok: ${pi.on_hand != null ? pi.on_hand + '/' + pi.safety_stock : '—'}</div>
-      ${candHtml}</div>`;
-  } else {
-    $('#identOut').innerHTML = `<div class="alt warn"><div class="h"><span class="nm" style="font-weight:600;color:var(--ink)">Parça tanınamadı</span></div>
-      <div class="note">${r.message || 'Eşleşme bulunamadı. Parça kodu/adı yazın ya da örnek parçalardan seçin.'}</div>${candHtml}</div>`;
-  }
-  document.querySelectorAll('#identOut .cand').forEach(b => b.onclick = () => identify(null, b.dataset.c));
-}
-
 // ---------- Sohbet ----------
-const quickQs = ['Bekleyen siparişler neler?', 'HYD-4520-B durumu?', 'Muadil var mı?', 'Bu hafta stok durumu?'];
+const quickQs = [
+  'Kritik stoktaki parçaları ve muadillerini göster',
+  'KAYNAK-ROBOT-02 arızasının kök nedenini araştır',
+  'HYD-4520-B için sipariş taslağı oluştur',
+  'Bu haftaki toplam duruş kaç saat, en kötü gün hangisi?',
+  'En sık tekrar eden arıza hangisi, önlem öner',
+  'Tesisin genel bakım performansını özetle',
+];
 function initChat() {
   $('#quick').innerHTML = '';
   quickQs.forEach(q => { const b = el('button', null, q); b.onclick = () => ask(q); $('#quick').append(b); });
@@ -591,6 +582,64 @@ async function ask(q) {
   addMsg('user', q); $('#chatInp').value = '';
   const r = await api('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
   addMsg('ai', r.answer);
+  // Sipariş/iş emri oluşturulduysa panelleri güncelle
+  if (r.answer && (r.answer.includes('sipariş') || r.answer.includes('TASLAK') || r.answer.includes('order') || r.answer.includes('iş emri'))) {
+    refreshOrders();
+    loadWorkOrders();
+    loadOverview();
+  }
+}
+
+async function refreshOrders() {
+  const orders = await api('/api/orders');
+  const box = $('#orderBody');
+  const pending = orders.filter(o => o.status === 'pending_approval');
+  if (!pending.length) { box.innerHTML = '<p class="muted-note">Bekleyen sipariş taslağı yok.</p>'; return; }
+  // En son 3 siparişi göster (son oluşturulanlar üstte)
+  const recent = pending.slice(0, 3);
+  box.innerHTML = '';
+  recent.forEach(o => {
+    const div = el('div', '', '');
+    div.style.marginBottom = '12px';
+    box.append(div);
+    drawOrderInto(div, o);
+  });
+  if (pending.length > 3) {
+    const more = el('div', 'muted-note', `+ ${pending.length - 3} daha eski sipariş taslağı var`);
+    more.style.textAlign = 'center';
+    more.style.marginTop = '8px';
+    box.append(more);
+  }
+}
+
+function drawOrderInto(container, o) {
+  const cls = o.status === 'approved' ? 'approved' : o.status === 'rejected' ? 'rejected' : 'pending';
+  let acts = '';
+  if (o.status === 'pending_approval') {
+    acts = `<div class="acts"><button class="btn ok" data-id="${o.draft_id}" data-action="approve">✓ Onayla</button><button class="btn danger" data-id="${o.draft_id}" data-action="reject">✕ Reddet</button></div>`;
+  }
+  const warn = o.requires_manager_approval ? `<div class="warnbox">⚠️ Tutar eşiğin üzerinde — YÖNETİCİ onayı şart.</div>` : '';
+  const finalMsg = o.status === 'approved' ? `<div class="status-final" style="color:var(--ok)">✓ Onaylandı — ${o.approved_by || ''}</div>`
+    : o.status === 'rejected' ? `<div class="status-final" style="color:var(--crit)">✕ Reddedildi — ${o.approved_by || ''}</div>` : '';
+  container.innerHTML = `<div class="order ${cls}">
+      <div class="ttl">🧾 ${o.draft_id}</div>
+      <div class="meta"><b>${o.part_code}</b> · ${o.name || ''}<br>
+        Adet: <b>${o.quantity}</b> · Tahmini tutar: <b>${tr(o.est_cost)} TL</b><br>
+        Durum: <b>${o.status === 'pending_approval' ? 'İnsan onayı bekliyor' : o.status}</b></div>
+      ${warn}${finalMsg}${acts}
+      <div class="muted-note" style="margin-top:10px">⛔ Bu taslak ajan tarafından onaylanmaz. Karar bakım planlama sorumlusuna aittir.</div>
+    </div>`;
+  container.querySelectorAll('[data-action]').forEach(btn => {
+    btn.onclick = async () => {
+      const approved = btn.dataset.action === 'approve';
+      const result = await api(`/api/order/${btn.dataset.id}/decide`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved, approver: 'Elif Demirtaş' })
+      });
+      drawOrderInto(container, result);
+      loadOverview();
+    };
+  });
 }
 $('#chatSend').onclick = () => { const v = $('#chatInp').value.trim(); if (v) ask(v); };
 $('#chatInp').onkeydown = e => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) ask(v); } };
@@ -611,6 +660,4 @@ document.querySelectorAll('.nav-item[data-target]').forEach(n => {
 loadOverview();
 loadWorkOrders();
 loadPreventive();
-loadParts();
-loadYoloSamples();
 initChat();

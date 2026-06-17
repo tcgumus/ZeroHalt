@@ -36,12 +36,12 @@
   <nav>
     <div class="nav-h">ANA MENÜ</div>
     <div class="nav-item active" data-target="sec-genel"><span class="d"></span>Genel Bakış</div>
-    <div class="nav-item" data-target="sec-ariza"><span class="d"></span>Arıza Akışı<span class="badge" id="navAriza">0</span></div>
+    <div class="nav-item" data-target="sec-ariza"><span class="d"></span>Arıza Akışı</div>
     <div class="nav-item" data-target="sec-ariza"><span class="d"></span>Teşhis Paneli</div>
     <div class="nav-item" data-target="sec-parca"><span class="d"></span>Parça Tanıma</div>
-    <div class="nav-item" data-target="sec-siparis"><span class="d"></span>Muadil &amp; Sipariş<span class="badge" id="navSip">0</span></div>
+    <div class="nav-item" data-target="sec-siparis"><span class="d"></span>Muadil &amp; Sipariş</div>
     <div class="nav-item" data-target="sec-isemri"><span class="d"></span>İş Emirleri</div>
-    <div class="nav-item" data-target="sec-onleyici"><span class="d"></span>Önleyici Bakım<span class="badge" id="navOnleyici">0</span></div>
+    <div class="nav-item" data-target="sec-onleyici"><span class="d"></span>Önleyici Bakım</div>
     <div class="nav-item" data-target="sec-stok"><span class="d"></span>Stok &amp; Duruş</div>
     <div class="nav-item" id="navChat"><span class="d"></span>Asistan</div>
     <div class="spacer"></div>
@@ -85,45 +85,27 @@
 
       <!-- PARÇA TANIMA -->
       <section id="sec-parca">
-        <div class="sec-head"><h1>Parça Tanıma</h1><span class="sub">Fotoğraf veya video yükleyin — YOLOv11 modeli ile otomatik tespit</span></div>
+        <div class="sec-head"><h1>Parça Tanıma</h1></div>
 
-        <!-- YOLO Görüntü Tanıma -->
         <div class="card" style="margin-bottom:16px">
-          <h3>🎯 YOLO Görüntü Tanıma <span style="font-size:11px;color:var(--muted);font-weight:400">(Fine-tuned YOLOv11)</span></h3>
           <div class="drop" id="yoloDrop" style="border:2px dashed var(--accent);background:rgba(59,130,246,0.04)">
-            📷🎬 Resim veya video yüklemek için tıklayın veya sürükleyin
-            <br><span class="muted-note">Desteklenen: JPG, PNG, MP4, AVI, MOV · Orijinal boyutta analiz</span>
+            Resim veya video yüklemek için tıklayın veya sürükleyin
+            <br><span class="muted-note">Desteklenen: JPG, PNG, MP4, AVI, MOV</span>
             <input type="file" id="yoloFile" accept="image/*,video/*" class="hidden">
           </div>
           <div id="yoloPreview" style="margin-top:12px;display:none">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
               <span id="yoloFileName" style="font-size:13px;color:var(--ink)"></span>
               <span id="yoloFileSize" style="font-size:11px;color:var(--muted)"></span>
-              <button class="btn" id="yoloClear" style="font-size:11px;padding:4px 10px">✕ Temizle</button>
+              <button class="btn" id="yoloClear" style="font-size:11px;padding:4px 10px">Temizle</button>
             </div>
             <img id="yoloPreviewImg" style="max-width:100%;max-height:200px;border-radius:8px;display:none">
             <video id="yoloPreviewVid" style="max-width:100%;max-height:200px;border-radius:8px;display:none" controls muted></video>
           </div>
-          <button class="btn primary" id="yoloDetectBtn" style="margin-top:12px;width:100%">🔍 Tespit Et</button>
-          <div class="muted-note" style="margin-top:14px">Örnek parçalar (tıklayıp YOLO ile tespit edin):</div>
-          <div id="yoloGallery" class="gallery" style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap"></div>
+          <button class="btn primary" id="yoloDetectBtn" style="margin-top:12px;width:100%">Parçayı Bul</button>
           <div id="yoloResult" style="margin-top:14px"></div>
         </div>
 
-        <!-- Eski metin tabanlı tanıma -->
-        <div class="card">
-          <h3>📝 Metin/İpucu ile Tanıma <span style="font-size:11px;color:var(--muted);font-weight:400">(Heuristik eşleme)</span></h3>
-          <div class="drop" id="drop">📷 Parça fotoğrafı yüklemek için tıklayın<br><span class="muted-note">(veya parça kodunu ipucu olarak yazın)</span>
-            <input type="file" id="file" accept="image/*" class="hidden">
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <input id="hintInp" placeholder="İpucu / etiket metni (örn. HYD-4520-B veya 'hidrolik pompa')" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px">
-            <button class="btn primary" id="identBtn">Tanı</button>
-          </div>
-          <div class="muted-note" style="margin-top:14px">Örnek parçalar (demo için tıklayın):</div>
-          <div id="partGallery" class="gallery"></div>
-          <div class="ident" id="identOut"></div>
-        </div>
       </section>
 
       <!-- MUADİL & SİPARİŞ -->

@@ -97,7 +97,115 @@ def orders():
 
 @app.get("/api/work_orders")
 def work_orders():
-    return jsonify(datasource.list_work_orders())
+    wos = datasource.list_work_orders()
+    # Son 5 iş emrini göster
+    return jsonify(wos[:5])
+
+
+@app.post("/api/work_order/create_from_diag")
+def create_work_order_from_diag():
+    """Teşhis sonucundan MCP tool ile dinamik iş emri oluşturur."""
+    body = request.get_json(force=True) or {}
+    fault_code = body.get("fault_code", "")
+    machine_id = body.get("machine_id", "")
+    root_cause = body.get("root_cause", "")
+    part_code = body.get("part_code", "")
+
+    if not fault_code:
+        return jsonify({"error": "fault_code gerekli"}), 400
+
+    # Bedrock'a MCP tool-use ile iş emri oluşturma
+    if config.CHAT_ONLINE or not config.OFFLINE_MODE:
+        try:
+            result = _create_wo_via_bedrock(fault_code, machine_id, root_cause, part_code)
+            return jsonify(result)
+        except Exception as exc:
+            pass  # Fallback to offline
+
+    # Offline fallback
+    incident = datasource.get_incident_by_fault(fault_code, machine_id)
+    fault_id = incident["incident_id"] if incident else fault_code
+    from src import tools as toolkit
+    wo = toolkit.dispatch("create_work_order", {
+        "fault_id": fault_id,
+        "root_cause": root_cause or "Kök neden belirlenemedi",
+        "steps": ["Arızayı değerlendir", "Parçayı değiştir", "Test et ve kaydet"],
+        "part_code": part_code or "UNKNOWN",
+        "technician": "Atanacak Teknisyen",
+    })
+    wo["tools_called"] = ["create_work_order"]
+    return jsonify(wo)
+
+
+def _create_wo_via_bedrock(fault_code, machine_id, root_cause, part_code):
+    """Bedrock tool-use ile iş emri oluşturur."""
+    from src.bedrock_client import BedrockClient
+    from src import tools as toolkit
+
+    client = BedrockClient()
+
+    prompt = (
+        f"Aşağıdaki arıza teşhisi için bir iş emri oluştur:\n"
+        f"- Arıza kodu: {fault_code}\n"
+        f"- Makine: {machine_id}\n"
+        f"- Kök neden: {root_cause}\n"
+        f"- İlgili parça: {part_code}\n\n"
+        "create_work_order tool'unu çağır. Onarım adımlarını detaylı yaz. "
+        "Teknisyen olarak 'Bakım Ekibi' ata."
+    )
+
+    messages = [{"role": "user", "content": [{"text": prompt}]}]
+    system = [{"text": "Sen bakım iş emri oluşturan bir ajansın. create_work_order tool'unu kullan."}]
+    tool_config = {"tools": [t for t in toolkit.TOOL_SPECS if t["toolSpec"]["name"] == "create_work_order"]}
+
+    tools_called = []
+    result = None
+
+    for _ in range(3):
+        resp = client.converse(messages, system=system, tool_config=tool_config)
+        out_msg = resp.get("output", {}).get("message", {})
+        messages.append(out_msg)
+        stop = resp.get("stopReason", "")
+
+        if stop != "tool_use":
+            break
+
+        tool_results = []
+        for block in out_msg.get("content", []):
+            if "toolUse" in block:
+                tu = block["toolUse"]
+                name = tu["name"]
+                tin = tu.get("input", {})
+                tuid = tu["toolUseId"]
+
+                # Incident ID'yi bul
+                if "fault_id" not in tin or not tin["fault_id"]:
+                    incident = datasource.get_incident_by_fault(fault_code, machine_id)
+                    tin["fault_id"] = incident["incident_id"] if incident else fault_code
+
+                r = toolkit.dispatch(name, tin)
+                tools_called.append(f"{name}({', '.join(f'{k}={v}' for k, v in tin.items())})")
+                result = r
+                tool_results.append({"toolResult": {"toolUseId": tuid, "content": [{"json": r if isinstance(r, dict) else {"data": r}}]}})
+
+        messages.append({"role": "user", "content": tool_results})
+
+    if result and isinstance(result, dict) and not result.get("error"):
+        result["tools_called"] = tools_called
+        return result
+
+    # Fallback
+    incident = datasource.get_incident_by_fault(fault_code, machine_id)
+    fault_id = incident["incident_id"] if incident else fault_code
+    wo = toolkit.dispatch("create_work_order", {
+        "fault_id": fault_id,
+        "root_cause": root_cause or "Kök neden belirlenemedi",
+        "steps": ["Arızayı değerlendir", "Parçayı kontrol et/değiştir", "Test et ve kaydet"],
+        "part_code": part_code or "UNKNOWN",
+        "technician": "Bakım Ekibi",
+    })
+    wo["tools_called"] = ["create_work_order (fallback)"]
+    return wo
 
 
 @app.get("/api/parts")

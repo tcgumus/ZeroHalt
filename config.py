@@ -32,7 +32,7 @@ def _path(name: str, default: str) -> Path:
 
 # --- AWS / Bedrock ---------------------------------------------------------
 AWS_REGION: str = os.getenv("AWS_REGION", "us-west-2")
-BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "eu.amazon.nova-lite-v1:0")
+BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
 # AMS_MODEL varsa model ID olarak onu kullan (öncelikli).
 _ams_model = os.getenv("AMS_MODEL")
 if _ams_model and _ams_model.strip():
@@ -50,7 +50,7 @@ USE_REAL_KB: bool = _bool("USE_REAL_KB", False)
 OFFLINE_MODE: bool = _bool("OFFLINE_MODE", True)
 
 # Chat-only online: Teşhis offline kalırken asistan sohbeti Bedrock'a gider.
-CHAT_ONLINE: bool = _bool("CHAT_ONLINE", False)
+CHAT_ONLINE: bool = _bool("CHAT_ONLINE", True)
 
 # --- Policy / onay ---------------------------------------------------------
 ORDER_APPROVAL_THRESHOLD: float = float(os.getenv("ORDER_APPROVAL_THRESHOLD", "5000"))
