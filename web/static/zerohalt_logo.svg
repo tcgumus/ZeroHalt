@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="200" height="160">
+  <defs>
+    <filter id="zh-shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="2" dy="2.5" stdDeviation="1.2" flood-color="#1a0033" flood-opacity="0.25"/>
+    </filter>
+    <linearGradient id="zh-topFace" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6c2bd9"/>
+      <stop offset="100%" stop-color="#5221a8"/>
+    </linearGradient>
+    <linearGradient id="zh-bottomFace" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5221a8"/>
+      <stop offset="100%" stop-color="#3d1880"/>
+    </linearGradient>
+    <linearGradient id="zh-rightEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3d1880"/>
+      <stop offset="100%" stop-color="#2a1060"/>
+    </linearGradient>
+    <linearGradient id="zh-bottomEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3d1880"/>
+      <stop offset="100%" stop-color="#2a1060"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ZERO bloğu - 3D -->
+  <polygon points="180,10 186,13 186,72 180,69" fill="url(#zh-rightEdge)"/>
+  <polygon points="14,69 180,69 186,72 20,72" fill="url(#zh-bottomEdge)"/>
+  <rect x="14" y="10" width="166" height="59" fill="url(#zh-topFace)" filter="url(#zh-shadow)"/>
+  <text x="97" y="44" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="32" font-weight="700" letter-spacing="6" 
+        fill="#00f5d4" text-anchor="middle" dominant-baseline="middle">ZERO</text>
+
+  <!-- HALT bloğu - 3D -->
+  <polygon points="180,82 186,85 186,144 180,141" fill="url(#zh-rightEdge)"/>
+  <polygon points="14,141 180,141 186,144 20,144" fill="url(#zh-bottomEdge)"/>
+  <rect x="14" y="82" width="166" height="59" fill="url(#zh-bottomFace)" filter="url(#zh-shadow)"/>
+  <text x="97" y="116" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" 
+        font-size="32" font-weight="700" letter-spacing="6" 
+        fill="#00f5d4" text-anchor="middle" dominant-baseline="middle">HALT</text>
+</svg>

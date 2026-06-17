@@ -214,10 +214,27 @@ async function loadWorkOrders() {
         <span class="c">${w.work_order_id}</span>
         <span class="nm">${w.part_code} · Teknisyen: ${w.technician}</span>
         <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span>
-        <span class="wo-caret">▾</span>
+        <span class="wo-caret">›</span>
       </div>
-      <div class="wo-sub">${steps.length} adım · Olay: ${w.fault_id} · ${w.created_at}</div>
-      <div class="wo-detail">
+      <div class="wo-sub">${steps.length} adım · Olay: ${w.fault_id} · ${w.created_at}</div>`;
+    card.querySelector('.wo-head').onclick = () => openWorkOrderModal(w);
+    box.append(card);
+  });
+}
+
+function openWorkOrderModal(w) {
+  const steps = w.steps || [];
+  closeWorkOrderModal();   // varsa önceki modalı kapat
+  const overlay = el('div', 'wo-modal-overlay');
+  overlay.id = 'woModal';
+  overlay.innerHTML = `
+    <div class="wo-modal" role="dialog" aria-modal="true" aria-label="İş emri detayı">
+      <button class="wo-modal-close" aria-label="Kapat">&times;</button>
+      <div class="wo-modal-head">
+        <span class="c">${w.work_order_id}</span>
+        <span class="apill" style="background:var(--okbg);color:var(--ok)">${w.status}</span>
+      </div>
+      <div class="wo-modal-body">
         <div class="wo-row"><div class="lbl">Kök Neden</div><div class="val">${w.root_cause || '—'}</div></div>
         <div class="wo-row"><div class="lbl">Onarım Adımları</div>
           <ul class="steps">${steps.map(s => `<li><span class="mk">•</span><span>${s}</span></li>`).join('') || '<li>—</li>'}</ul></div>
@@ -226,10 +243,23 @@ async function loadWorkOrders() {
           <span>Teknisyen: <b>${w.technician}</b></span><span>Durum: <b>${w.status}</b></span>
           <span>Oluşturma: <b>${w.created_at}</b></span>
         </div>
-      </div>`;
-    card.querySelector('.wo-head').onclick = () => card.classList.toggle('open');
-    box.append(card);
-  });
+      </div>
+    </div>`;
+  // Kapatma: × butonu, arka plana tıklama, Esc
+  overlay.querySelector('.wo-modal-close').onclick = closeWorkOrderModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeWorkOrderModal(); };
+  document.body.append(overlay);
+  document.addEventListener('keydown', _woEscHandler);
+}
+
+function closeWorkOrderModal() {
+  const m = $('#woModal');
+  if (m) m.remove();
+  document.removeEventListener('keydown', _woEscHandler);
+}
+
+function _woEscHandler(e) {
+  if (e.key === 'Escape') closeWorkOrderModal();
 }
 
 // ---------- Grafik / stok ----------
@@ -518,7 +548,45 @@ function initChat() {
   quickQs.forEach(q => { const b = el('button', null, q); b.onclick = () => ask(q); $('#quick').append(b); });
   addMsg('ai', 'Merhaba, bakım asistanınızım. Parça, sipariş, iş emri ve stok durumunu sorabilirsiniz.');
 }
-function addMsg(role, text) { const m = el('div', 'msg ' + role, text.replace(/</g, '&lt;')); $('#msgs').append(m); $('#msgs').scrollTop = $('#msgs').scrollHeight; }
+
+function parseMd(text) {
+  // Basit markdown → HTML dönüştürücü
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Kod blokları (```)
+  html = html.replace(/```([^`]*?)```/gs, '<pre><code>$1</code></pre>');
+  // Inline kod
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Kalın
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // İtalik
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Başlıklar
+  html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+  // Tablo satırları
+  html = html.replace(/^\|(.+)\|$/gm, (m, row) => {
+    const cells = row.split('|').map(c => c.trim());
+    if (cells.every(c => /^[-:]+$/.test(c))) return ''; // ayırıcı satır
+    return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+  });
+  html = html.replace(/(<tr>.*<\/tr>\s*)+/gs, '<table class="md-table">$&</table>');
+  // Liste
+  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\s*)+/gs, '<ul>$&</ul>');
+  // Numaralı liste
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Paragraflar (boş satırlar)
+  html = html.replace(/\n{2,}/g, '<br><br>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function addMsg(role, text) { const m = el('div', 'msg ' + role, role === 'ai' ? parseMd(text) : text.replace(/</g, '&lt;')); $('#msgs').append(m); $('#msgs').scrollTop = $('#msgs').scrollHeight; }
 async function ask(q) {
   addMsg('user', q); $('#chatInp').value = '';
   const r = await api('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
