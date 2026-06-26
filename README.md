@@ -1,4 +1,14 @@
+
+## 🏆 This project won 1st place at the hackathon.
+## 🏆 Bu proje hackathonda birincilik ödülü kazandı.
+
+#
+#
+#
+        
+
 # ZeroHalt — Otonom Bakım ve Parça Yönetim Sistemi
+
 
 Üretim hattında bir makine arızalandığında **otonom devreye giren bir yapay zekâ
 ajanı**. Görevi: arızanın kök nedenini bulmak, çözüm adımlarını çıkarmak, gereken
